@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as util from "util";
+import * as path from "path";
 import * as ts from "typescript";
+import * as webpack from "webpack";
 
 function compile(fileNames: string[], options: ts.CompilerOptions): void {
   let program = ts.createProgram(fileNames, options);
@@ -30,19 +32,40 @@ function compile(fileNames: string[], options: ts.CompilerOptions): void {
   });
 
   let exitCode = emitResult.emitSkipped ? 1 : 0;
-  console.log(`Process exiting with code '${exitCode}'.`);
-  process.exit(exitCode);
 }
 
-const readdir = util.promisify(fs.readdir);
+const runWebpack = (file: string) => {
+  const compiler = webpack({
+    entry: './out/bots/berserker.js',
+    output: {
+      filename: file + '.js',
+    }
+  });
 
+  compiler.run((err, stats) => {
+    if (err) console.error(err);
+    console.log(stats.toString());
+
+    console.log("webpack ran");
+  });
+};
+
+const readdir = util.promisify(fs.readdir);
+const botsPath = "src/bots";
+const outPath = "out/bots";
 (async () => {
-  let files = await readdir("bots");
-  let botFiles = files.filter(name => name.includes(".ts")).map(name => "bots/" + name);
+  let files = await readdir(botsPath);
+  let botFiles = files
+    .filter(name => name.includes(".ts"))
+    .map(name => path.join(botsPath, name));
+
   compile(botFiles, {
-    noEmitOnError: true,
-    noImplicitAny: true,
+    noEmitOnError: false,
+    noImplicitAny: false,
+    outDir: "out",
     target: ts.ScriptTarget.ES2017,
     module: ts.ModuleKind.CommonJS
   });
+
+  runWebpack(path.join(outPath, botFiles[0].replace('.ts', '.js')));
 })();
