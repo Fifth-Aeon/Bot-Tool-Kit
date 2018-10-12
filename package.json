@@ -1,0 +1,12 @@
+{
+  "name": "fifth-aeon-bot-toolkit",
+  "version": "1.0.0",
+  "description": "A toolkit to help write A.I players for the Fifth Aeon CCG",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "William Ritson",
+  "license": "Apache-2.0"
+}
