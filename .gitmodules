@@ -1,4 +1,4 @@
 [submodule "CCG-Model"]
-	path = CCG-Model
+	path = src/game_model
 	url = https://github.com/Fifth-Aeon/CCG-Model.git
 	branch = master
