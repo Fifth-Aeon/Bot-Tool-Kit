@@ -1,13 +1,13 @@
 import { sample } from 'lodash';
-import { AI } from './CCG-Model/ai/ai';
-import { DefaultAI } from './CCG-Model/ai/defaultAi';
-import { Animator } from './CCG-Model/animator';
-import { ClientGame } from './CCG-Model/clientGame';
-import { GameActionType, GameSyncEvent } from './CCG-Model/game';
-import { standardFormat } from './CCG-Model/gameFormat';
-import { Log } from './CCG-Model/log';
-import { allDecks } from './CCG-Model/scenarios/decks';
-import { ServerGame } from './CCG-Model/serverGame';
+import { AI } from './game_model/ai/ai';
+import { DefaultAI } from './game_model/ai/defaultAi';
+import { Animator } from './game_model/animator';
+import { ClientGame } from './game_model/clientGame';
+import { GameActionType, GameSyncEvent } from './game_model/game';
+import { standardFormat } from './game_model/gameFormat';
+import { Log } from './game_model/log';
+import { allDecks } from './game_model/scenarios/decks';
+import { ServerGame } from './game_model/serverGame';
 
 
 export class GameManager {

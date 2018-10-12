@@ -1,4 +1,4 @@
-import { DefaultAI } from '../CCG-Model/ai/defaultAi';
+import { DefaultAI } from '../game_model/ai/defaultAi';
 
 /**
  * Berserker is a version of the default A.I that always makes every available attack and never blocks.
