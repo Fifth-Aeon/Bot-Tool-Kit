@@ -1,71 +1,114 @@
 import * as fs from "fs";
-import * as util from "util";
 import * as path from "path";
-import * as ts from "typescript";
-import * as webpack from "webpack";
+import * as inquirer from "inquirer";
+//import * as chalk from "chalk";
+import * as figlet from "figlet";
+import { BotPackager } from "./botPackager";
+import { camelCase, capitalize } from "lodash";
 
-function compile(fileNames: string[], options: ts.CompilerOptions): void {
-  let program = ts.createProgram(fileNames, options);
-  let emitResult = program.emit();
+const chalk = require("chalk");
+const packager = new BotPackager();
+const botsPath = "src/bots";
 
-  let allDiagnostics = ts
-    .getPreEmitDiagnostics(program)
-    .concat(emitResult.diagnostics);
+//const shell = require("shelljs");
 
-  allDiagnostics.forEach(diagnostic => {
-    if (diagnostic.file) {
-      let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(
-        diagnostic.start!
-      );
-      let message = ts.flattenDiagnosticMessageText(
-        diagnostic.messageText,
-        "\n"
-      );
-      console.log(
-        `${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`
-      );
-    } else {
-      console.log(
-        `${ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")}`
-      );
-    }
-  });
-
-  let exitCode = emitResult.emitSkipped ? 1 : 0;
-}
-
-const runWebpack = (file: string) => {
-  const compiler = webpack({
-    entry: './out/bots/berserker.js',
-    output: {
-      filename: file + '.js',
-    }
-  });
-
-  compiler.run((err, stats) => {
-    if (err) console.error(err);
-    console.log(stats.toString());
-
-    console.log("webpack ran");
-  });
+const init = () => {
+  console.log(
+    chalk.cyan(
+      figlet.textSync("Fifth Aeon - Bot Toolkit", {
+        font: "Standard",
+        horizontalLayout: "default",
+        verticalLayout: "default"
+      })
+    )
+  );
 };
 
-const readdir = util.promisify(fs.readdir);
-const botsPath = "src/bots";
-const outPath = "out/bots";
-(async () => {
-  let files = await readdir(botsPath);
+const packageBot = async () => {
+  let files = fs.readdirSync(botsPath);
   let botFiles = files
     .filter(name => name.includes(".ts"))
     .map(name => path.join(botsPath, name));
 
-  compile(botFiles, {
-    noEmitOnError: false,
-    noImplicitAny: false,
-    outDir: "out",
-    target: ts.ScriptTarget.ES2017,
-    module: ts.ModuleKind.CommonJS
-  });
+  let result = await inquirer.prompt([
+    {
+      type: "list",
+      name: "path",
+      message: "Which file would you like to package as a bot",
+      choices: botFiles
+    }
+  ]);
+  let filename = (result as any).path as string;
 
-  runWebpack(path.join(outPath, botFiles[0].replace('.ts', '.js')));
-})();
+  packager.buildBot(filename);
+};
+
+const outputBot = (name: string) => {
+  const identifier = camelCase(name);
+  const typename = capitalize(identifier);
+  const code = `import { DefaultAI } from '../game_model/ai/defaultAi';
+
+/**
+ * ${name} is a Fifth Aeon bot.
+ * 
+ * It inherits the behavior of the default bot. You can customize it by overriding methods.
+ * 
+ * If you would rather work from scratch change extends DefaultAI to extends AI
+ */
+export class ${typename} extends DefaultAI {
+
+}
+`;
+
+  fs.writeFileSync(`src/bots/${identifier}.ts`, code);
+};
+
+const createBot = async () => {
+  let result = await inquirer.prompt([
+    {
+      type: "input",
+      name: "name",
+      message: "What will the bot be named?"
+    }
+  ]);
+  let name = (result as any).name as string;
+
+  outputBot(name);
+};
+
+const askForCommand = async () => {
+  const options = {
+    create: "Create a new bot",
+    package: "Package a bot for distribution"
+  };
+  let result = await inquirer.prompt([
+    {
+      type: "list",
+      name: "option",
+      message: "What would you like to do?",
+      choices: [options.create, options.package]
+    }
+  ]);
+  let choice = (result as any).option as string;
+
+  switch (choice) {
+    case options.create:
+      createBot();
+      break;
+    case options.package:
+      packageBot();
+      break;
+  }
+};
+
+const run = async () => {
+  // show script introduction
+  init();
+
+  // ask questions
+  askForCommand();
+
+  // create the file
+  // show success message
+};
+run();

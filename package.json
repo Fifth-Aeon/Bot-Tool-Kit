@@ -10,7 +10,12 @@
   "author": "William Ritson",
   "license": "Apache-2.0",
   "dependencies": {
+    "@types/figlet": "^1.2.0",
+    "@types/inquirer": "0.0.43",
     "@types/webpack": "^4.4.16",
+    "chalk": "^2.4.1",
+    "figlet": "^1.2.1",
+    "inquirer": "^6.2.0",
     "lodash": "^4.17.11",
     "node-typescript-compiler": "^1.1.1",
     "ts-node": "^7.0.1",
