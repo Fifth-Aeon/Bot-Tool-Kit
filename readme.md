@@ -7,7 +7,7 @@ This repository contains a command line tool intended to make it easier to produ
 3. Navigate your terminal into the folder you cloned the repository into and run `npm install` to get the dependencies
 4. Run `npm run` to start the tool.
 
-### How to Right Bots
+### How to Write Bots
 Tutorials and more to be added here once written.
 
 If somehow that hasn't happened yet and your seeing this. Check out the defaultAi.ts file for an example of a working bot. 
