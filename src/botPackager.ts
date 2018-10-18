@@ -1,5 +1,3 @@
-import * as fs from "fs";
-import * as util from "util";
 import * as path from "path";
 import * as ts from "typescript";
 import * as webpack from "webpack";
@@ -7,7 +5,6 @@ import * as webpack from "webpack";
 const packageOutPath = "packaged";
 const outPath = "dist/bots";
 export class BotPackager {
-
   public buildBot(botName: string) {
     this.compile([botName], {
       noEmitOnError: false,
@@ -48,27 +45,22 @@ export class BotPackager {
       }
     });
 
-    let exitCode = emitResult.emitSkipped ? 1 : 0;
   }
 
   private runWebpack(file: string) {
-    path.basename(file)
-    const jsFile = './' + path.join(outPath, path.basename(file));
-    const packageFile = './' + path.join(packageOutPath, path.basename(file));
-    console.log(jsFile);
-    console.log(packageFile)
+    const jsFile = "./" + path.join(outPath, path.basename(file));
+    const packageFile = "./" + path.join(packageOutPath, path.basename(file));
     const compiler = webpack({
       entry: jsFile,
       output: {
         filename: packageFile
-      }
+      },
+      mode: "development"
     });
 
     compiler.run((err, stats) => {
       if (err) console.error(err);
       console.log(stats.toString());
-
-      console.log("webpack ran");
     });
   }
 }

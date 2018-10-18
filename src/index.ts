@@ -1,14 +1,14 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as inquirer from "inquirer";
-//import * as chalk from "chalk";
 import * as figlet from "figlet";
 import { BotPackager } from "./botPackager";
 import { camelCase, capitalize } from "lodash";
+import { GameManager } from "./gameManager";
 
 const chalk = require("chalk");
 const packager = new BotPackager();
-const botsPath = "src/bots";
+const manager = new GameManager();
 
 //const shell = require("shelljs");
 
@@ -24,6 +24,7 @@ const init = () => {
   );
 };
 
+const botsPath = "src/bots";
 const packageBot = async () => {
   let files = fs.readdirSync(botsPath);
   let botFiles = files
@@ -79,14 +80,15 @@ const createBot = async () => {
 const askForCommand = async () => {
   const options = {
     create: "Create a new bot",
-    package: "Package a bot for distribution"
+    package: "Package a bot for distribution",
+    game: "Run a game (between 2 bots)"
   };
   let result = await inquirer.prompt([
     {
       type: "list",
       name: "option",
       message: "What would you like to do?",
-      choices: [options.create, options.package]
+      choices: [options.create, options.package, options.game]
     }
   ]);
   let choice = (result as any).option as string;
@@ -98,6 +100,9 @@ const askForCommand = async () => {
     case options.package:
       packageBot();
       break;
+    case options.game:
+      manager.startAIGame();
+      break;
   }
 };
 
@@ -107,8 +112,5 @@ const run = async () => {
 
   // ask questions
   askForCommand();
-
-  // create the file
-  // show success message
 };
 run();

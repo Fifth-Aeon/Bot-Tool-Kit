@@ -3,7 +3,7 @@ import { AI } from './game_model/ai/ai';
 import { DefaultAI } from './game_model/ai/defaultAi';
 import { Animator } from './game_model/animator';
 import { ClientGame } from './game_model/clientGame';
-import { GameActionType, GameSyncEvent } from './game_model/game';
+import { GameActionType, GameSyncEvent, SyncEventType } from './game_model/game';
 import { standardFormat } from './game_model/gameFormat';
 import { Log } from './game_model/log';
 import { allDecks } from './game_model/scenarios/decks';
@@ -57,28 +57,32 @@ export class GameManager {
                 for (let ai of this.ais) {
                     ai.handleGameEvent(event);
                 }
+                this.watchGame(event);
             }
         }, 50);
     }
 
-    private sendGameAction(type: GameActionType, params: any, isAi: boolean = false) {
+    private watchGame(event: GameSyncEvent) {
+        if (event.type == SyncEventType.Ended) {
+            this.endGame(event.params.winner, event.params.quit);
+        } else if (event.type == SyncEventType.TurnStart) {
+            console.log(`Turn ${ event.params.turnNum} Life Totals ${this.gameModel.getPlayer(0).getLife()} to ${this.gameModel.getPlayer(1).getLife()}.`);
+        }
+    }
+
+    private sendGameAction(type: GameActionType, params: any, playerNumber: number) {
         let res = this.gameModel.handleAction({
             type: type,
-            player: isAi ? 1 : 0,
+            player: playerNumber,
             params: params
         });
+        console.log('AI', playerNumber, 'sent action', GameActionType[type], params);
         if (res === null) {
-            console.error('An action sent to game model by', isAi ?
-                'the A.I' : 'the player', 'failed.', 'It was', GameActionType[type], 'with', params);
+            console.error('An action sent to game model by', playerNumber, 'failed.', 'It was', GameActionType[type], 'with', params);
             return;
         }
         this.sendEventsToLocalPlayers(res);
 
-    }
-
-
-    public getGame() {
-        return this.game1;
     }
 
     public setGameEndCallback(newCallback: (won: boolean, quit: boolean) => any) {
@@ -98,32 +102,29 @@ export class GameManager {
     /** Invoked when the game ends (because a player won) */
     private endGame(winner: number, quit: boolean) {
         this.stopAI();
-    }
-
-    /** Invoked when we quit the game (before its over) */
-    public exitGame() {
-        this.sendGameAction(GameActionType.Quit, {});
+        console.log(`A.I ${winner} won the game`);
     }
 
 
-    public startAIGame(aiCount = 1) {
+    public startAIGame() {
         // The player always goes first vs the A.I
         let aiDeck = sample(allDecks);
         let anim = new Animator(0.01);
+        console.log('Using deck', aiDeck.name, '(mirror match)');
         
 
         // Initialize games
         this.gameModel = new ServerGame('server', standardFormat, [aiDeck, aiDeck]);
         this.game1 = new ClientGame('A.I - 1',
-            (type, params) => this.sendGameAction(type, params, false),
+            (type, params) => this.sendGameAction(type, params, 0),
             anim,
             this.log);
         this.game2 = new ClientGame('A.I - 2',
-            (type, params) => this.sendGameAction(type, params, true),
+            (type, params) => this.sendGameAction(type, params, 1),
             anim);
 
         const aiGames = [this.game2, this.game1];
-        for (let i = 0; i < aiCount; i++) {
+        for (let i = 0; i < 2; i++) {
             let playerNumber = this.game1.getOtherPlayerNumber(i);
             this.ais.push(new DefaultAI(playerNumber, aiGames[i], aiDeck, anim));
         }
