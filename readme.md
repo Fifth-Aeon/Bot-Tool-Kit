@@ -13,7 +13,7 @@ Tutorials and more to be added here once written.
 If somehow that hasn't happened yet and your seeing this. Check out the defaultAi.ts file for an example of a working bot. 
 
 ### Tool Capabilities
-* Compile and package bots - in progress
-* Run local games - Todo
-* Run local tournaments - Todo
+* Compile and package bots - Done
+* Run local games - Partially Done
+* Run local tournaments - Partially Done
 * Submit bots to server for competition - Todo
