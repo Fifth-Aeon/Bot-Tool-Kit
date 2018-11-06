@@ -17,7 +17,7 @@ export class GameManager {
   private game2: ClientGame;
   private gameModel: ServerGame;
 
-  private onGameEnd: (winner: number) => void;
+  private onGameEnd: (winner: number) => any = () => null;
 
   private ais: Array<AI> = [];
   private aiTick: any;
@@ -28,6 +28,7 @@ export class GameManager {
   }
 
   public reset() {
+    console.log('reset');
     this.game1 = null;
     this.game2 = null;
     this.gameModel = null;
@@ -63,7 +64,7 @@ export class GameManager {
   private watchGame(event: GameSyncEvent) {
     if (event.type == SyncEventType.Ended) {
       this.endGame(event.params.winner, event.params.quit);
-    } else if (event.type == SyncEventType.TurnStart) {
+    } else if (event.type == SyncEventType.TurnStart && this.gameModel) {
       console.log(
         `Turn ${event.params.turnNum} Life Totals ${this.gameModel
           .getPlayer(0)
@@ -82,19 +83,13 @@ export class GameManager {
       player: playerNumber,
       params: params
     });
-    console.log(
-      "AI",
-      playerNumber,
-      "sent action",
-      GameActionType[type],
-      params
-    );
+
+    //console.log(`AI ${playerNumber} sent action ${GameActionType[type]} with params`, params);
     if (res === null) {
       console.error(
         "An action sent to game model by",
         playerNumber,
-        "failed.",
-        "It was",
+        "failed. It was",
         GameActionType[type],
         "with",
         params
@@ -112,14 +107,14 @@ export class GameManager {
 
   /** Invoked when the game ends (because a player won) */
   private endGame(winner: number, quit: boolean) {
-    this.stopAI();
     console.log(`A.I ${winner} won the game`);
+    this.reset();
     this.onGameEnd(winner);
   }
 
   public async runRoundRobinTournament(
     ais: Array<AIConstructor> = [DefaultAI, DefaultAI],
-    numberOfGames = 3
+    numberOfGames = 10
   ) {
 
     let scores = Array<number>(ais.length).fill(0, 0, ais.length);
@@ -129,7 +124,7 @@ export class GameManager {
           for (let k = 0; k < numberOfGames; k++) {
             this.startAIGame(ais[i], ais[j]);
             await new Promise(resolve => {
-              this.endGame = winner => {
+              this.onGameEnd = winner => {
                 if (winner === 0) {
                   scores[i]++;
                 } else {

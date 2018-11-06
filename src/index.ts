@@ -81,14 +81,15 @@ const askForCommand = async () => {
   const options = {
     create: "Create a new bot",
     package: "Package a bot for distribution",
-    game: "Run a game (between 2 bots)"
+    game: "Run a game (between 2 bots)",
+    tournament: "Run a round robin tournament"
   };
   let result = await inquirer.prompt([
     {
       type: "list",
       name: "option",
       message: "What would you like to do?",
-      choices: [options.create, options.package, options.game]
+      choices: [options.create, options.package, options.game, options.tournament]
     }
   ]);
   let choice = (result as any).option as string;
@@ -102,6 +103,9 @@ const askForCommand = async () => {
       break;
     case options.game:
       manager.startAIGame();
+      break;
+    case options.tournament:
+      manager.runRoundRobinTournament();
       break;
   }
 };
