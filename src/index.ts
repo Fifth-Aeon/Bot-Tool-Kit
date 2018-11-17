@@ -12,6 +12,9 @@ const manager = new GameManager();
 
 //const shell = require("shelljs");
 
+// Unhandled promise rejections should throw exceptions
+process.on('unhandledRejection', up => { throw up });
+
 const init = () => {
   console.log(
     chalk.cyan(

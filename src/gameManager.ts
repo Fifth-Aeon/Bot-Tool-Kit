@@ -1,16 +1,14 @@
-import { sample } from "lodash";
+import { Unit } from "game_model/unit";
 import { AI, AIConstructor } from "./game_model/ai/ai";
 import { DefaultAI } from "./game_model/ai/defaultAi";
 import { Animator } from "./game_model/animator";
 import { ClientGame } from "./game_model/clientGame";
-import {
-  GameActionType,
-  GameSyncEvent,
-  SyncEventType
-} from "./game_model/game";
+import { Game, GameActionType, GameSyncEvent, SyncEventType } from "./game_model/game";
 import { standardFormat } from "./game_model/gameFormat";
-import { allDecks } from "./game_model/scenarios/decks";
 import { ServerGame } from "./game_model/serverGame";
+import { sample } from 'lodash';
+import { allDecks } from "./game_model/scenarios/decks";
+
 
 export class GameManager {
   private game1: ClientGame;
@@ -54,7 +52,15 @@ export class GameManager {
     setTimeout(() => {
       for (let event of events) {
         for (let ai of this.ais) {
-          ai.handleGameEvent(event);
+          try {
+            ai.handleGameEvent(event);
+          } catch (error) {
+            console.error('Failure while sending events to A.Is');
+            console.error(error);
+            console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
+            console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
+            throw new Error();
+          }
         }
         this.watchGame(event);
       }
@@ -71,6 +77,15 @@ export class GameManager {
           .getLife()} to ${this.gameModel.getPlayer(1).getLife()}.`
       );
     }
+  }
+
+  private summerizeUnit(unit: Unit): String {
+    return `${unit.getId()}: ${unit.getName()} E:${unit.isExhausted()} A: ${unit.canAttack()}`
+  }
+
+  private printCards(game: Game) {
+    console.error(game.getName(), 'Hand 1', this.game1.getPlayer(0).getHand().map(card =>
+      [card.getId(), card.getName(), card.isPlayable(game)]));
   }
 
   private sendGameAction(
@@ -94,6 +109,17 @@ export class GameManager {
         "with",
         params
       );
+      if (type != GameActionType.PlayResource) {
+        console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
+        console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
+        console.error('S Game Units', this.gameModel.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
+
+        this.printCards(this.game1);
+        this.printCards(this.game2);
+        this.printCards(this.gameModel);
+      }
+      process.exit(1);
+
       return;
     }
     this.sendEventsToLocalPlayers(res);
@@ -114,7 +140,7 @@ export class GameManager {
 
   public async runRoundRobinTournament(
     ais: Array<AIConstructor> = [DefaultAI, DefaultAI],
-    numberOfGames = 10
+    numberOfGames = 1000
   ) {
 
     let scores = Array<number>(ais.length).fill(0, 0, ais.length);
@@ -148,6 +174,7 @@ export class GameManager {
   public startAIGame(ai1: AIConstructor = DefaultAI, ai2: AIConstructor = DefaultAI) {
     // The player always goes first vs the A.I
     let aiDeck = sample(allDecks);
+    //let aiDeck = deckMap.get('dominion');
     let anim = new Animator(0.01);
     console.log("Using deck", aiDeck.name, "(mirror match)");
 
