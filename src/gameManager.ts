@@ -21,30 +21,28 @@ export class GameManager {
   private aiTick: any;
 
   constructor() {
-    this.setAISpeed(1000);
     this.reset();
   }
 
   public reset() {
     console.log('reset');
+    this.stopAI();
     this.game1 = null;
     this.game2 = null;
     this.gameModel = null;
     this.ais = [];
-    this.stopAI();
   }
 
   private stopAI() {
-    clearInterval(this.aiTick);
+    for (let ai of this.ais) {
+      ai.stopActing();
+    }
   }
 
-  public setAISpeed(ms: number) {
-    if (this.aiTick !== undefined) clearInterval(this.aiTick);
-    this.aiTick = setInterval(() => {
-      for (let ai of this.ais) {
-        ai.pulse();
-      }
-    }, ms);
+  public setAISpeed(ms: number, animator: Animator) {
+    for (let ai of this.ais) {
+      ai.startActingDelayMode(ms, animator);
+    }
   }
 
   // Action communication -------------------------------------
@@ -67,6 +65,13 @@ export class GameManager {
     }, 50);
   }
 
+  private checkPriorityChange(event: GameSyncEvent) {
+    if (!this.gameModel.canTakeAction())
+      return;
+    if (event.type === SyncEventType.TurnStart || event.type === SyncEventType.PhaseChange || event.type === SyncEventType.ChoiceMade)
+      this.ais[this.gameModel.getActivePlayer()].onGainPriority();
+  }
+
   private watchGame(event: GameSyncEvent) {
     if (event.type == SyncEventType.Ended) {
       this.endGame(event.params.winner, event.params.quit);
@@ -76,6 +81,10 @@ export class GameManager {
           .getPlayer(0)
           .getLife()} to ${this.gameModel.getPlayer(1).getLife()}.`
       );
+    }
+
+    if (this.gameModel) {
+      this.checkPriorityChange(event);
     }
   }
 
@@ -175,7 +184,7 @@ export class GameManager {
     // The player always goes first vs the A.I
     let aiDeck = sample(allDecks);
     // let aiDeck = deckMap.get('clericalOrder');
-    let anim = new Animator(0.0001);
+    let animator = new Animator(0.0001);
     console.log("Using deck", aiDeck.name, "(mirror match)");
 
     // Initialize games
@@ -183,18 +192,17 @@ export class GameManager {
     this.game1 = new ClientGame(
       "A.I - 1",
       (type, params) => this.sendGameAction(type, params, 0),
-      anim
+      animator
     );
     this.game2 = new ClientGame(
       "A.I - 2",
       (type, params) => this.sendGameAction(type, params, 1),
-      anim
+      animator
     );
 
-    this.ais.push(new ai1(0, this.game1, aiDeck, anim));
-    this.ais.push(new ai2(1, this.game2, aiDeck, anim));
-    this.setAISpeed(50);
-
+    this.ais.push(new ai1(0, this.game1, aiDeck));
+    this.ais.push(new ai2(1, this.game2, aiDeck));
+    this.setAISpeed(50, animator);
     this.sendEventsToLocalPlayers(this.gameModel.startGame());
   }
 }
