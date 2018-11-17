@@ -7,7 +7,7 @@ import { Game, GameActionType, GameSyncEvent, SyncEventType } from "./game_model
 import { standardFormat } from "./game_model/gameFormat";
 import { ServerGame } from "./game_model/serverGame";
 import { sample } from 'lodash';
-import { allDecks } from "./game_model/scenarios/decks";
+import { allDecks, deckMap } from "./game_model/scenarios/decks";
 
 
 export class GameManager {
@@ -174,8 +174,8 @@ export class GameManager {
   public startAIGame(ai1: AIConstructor = DefaultAI, ai2: AIConstructor = DefaultAI) {
     // The player always goes first vs the A.I
     let aiDeck = sample(allDecks);
-    //let aiDeck = deckMap.get('dominion');
-    let anim = new Animator(0.01);
+    // let aiDeck = deckMap.get('clericalOrder');
+    let anim = new Animator(0.0001);
     console.log("Using deck", aiDeck.name, "(mirror match)");
 
     // Initialize games
