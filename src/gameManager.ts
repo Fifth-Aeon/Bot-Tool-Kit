@@ -6,8 +6,9 @@ import { ClientGame } from "./game_model/clientGame";
 import { Game, GameActionType, GameSyncEvent, SyncEventType } from "./game_model/game";
 import { standardFormat } from "./game_model/gameFormat";
 import { ServerGame } from "./game_model/serverGame";
-import { sample } from 'lodash';
 import { allDecks, deckMap } from "./game_model/scenarios/decks";
+import * as fs from "fs";
+
 
 
 export class GameManager {
@@ -19,6 +20,8 @@ export class GameManager {
 
   private ais: Array<AI> = [];
   private aiTick: any;
+  private seed: number;
+
 
   constructor() {
     this.reset();
@@ -39,30 +42,90 @@ export class GameManager {
     }
   }
 
-  public setAISpeed(ms: number, animator: Animator) {
+  public startAiInDelayMode(ms: number, animator: Animator) {
     for (let ai of this.ais) {
       ai.startActingDelayMode(ms, animator);
     }
+  }
+
+  public startAiInImmediateMode() {
+    for (let ai of this.ais) {
+      ai.startActingImmediateMode();
+    }
+  }
+
+  private printEvents(events: GameSyncEvent[]) {
+    for (let event of events) {
+      console.log(SyncEventType[event.type], event.params);
+    }
+  }
+
+  private printGameEvents(game: Game, num: number) {
+    let events = this.game1.getPastEvents().slice(this.game1.getPastEvents().length - num);
+
+    console.log();
+    console.log(`Last ${num} ${game.getName()} events`);
+    for (let event of events) {
+      console.log(SyncEventType[event.type], event.params);
+    }
+    console.log();
+
+  }
+
+  private checkGameSyncronization(game1: Game, game2: Game) {
+    for (let i = 0; i < 2; i++) {
+      let player1 = game1.getPlayer(i);
+      let hand1 = player1.getHand();
+
+      let player2 = game2.getPlayer(i);
+      let hand2 = player2.getHand();
+
+      let playerS = this.gameModel.getPlayer(i);
+      let handS = playerS.getHand();
+
+      if (hand1.length != hand2.length) {
+        throw new Error(`Sync error hands of player ${i} are not equally long ${hand1.length} in game1 vs ${hand2.length} in game2 vs ${handS.length} in serve`);
+      }
+    }
+
   }
 
   // Action communication -------------------------------------
   private sendEventsToLocalPlayers(events: GameSyncEvent[]) {
     setTimeout(() => {
       for (let event of events) {
+        let aiNum = 0;
         for (let ai of this.ais) {
           try {
             ai.handleGameEvent(event);
           } catch (error) {
+            this.saveSeed(this.seed);
+
             console.error('Failure while sending events to A.Is');
             console.error(error);
-            console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
-            console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
+            //console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
+            //console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
+
+            console.log(`Game 1 hand`, this.game1.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
+            console.log(`Game 2 hand`, this.game2.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
+            console.log(`Game S hand`, this.gameModel.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
+
+            this.printGameEvents(this.game1, 4);
+            this.printGameEvents(this.game2, 4);
+            this.printGameEvents(this.gameModel, 4);
+
+            //console.error('Game 1 cards', this.game1.lastCardsPlayed);
+            //console.error('Game 2 cards', this.game2.lastCardsPlayed);
+            //console.error('server cards', this.gameModel.lastCardsPlayed);
             throw new Error();
           }
+          aiNum++;
         }
         this.watchGame(event);
       }
-    }, 50);
+
+
+    }, 1);
   }
 
   private checkPriorityChange(event: GameSyncEvent) {
@@ -102,6 +165,7 @@ export class GameManager {
     params: any,
     playerNumber: number
   ) {
+    //console.log(playerNumber, 'took', GameActionType[type], 'with', params);
     let res = this.gameModel.handleAction({
       type: type,
       player: playerNumber,
@@ -110,6 +174,8 @@ export class GameManager {
 
     //console.log(`AI ${playerNumber} sent action ${GameActionType[type]} with params`, params);
     if (res === null) {
+      this.saveSeed(this.seed);
+
       console.error(
         "An action sent to game model by",
         playerNumber,
@@ -118,15 +184,15 @@ export class GameManager {
         "with",
         params
       );
-      if (type != GameActionType.PlayResource) {
-        console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
-        console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
-        console.error('S Game Units', this.gameModel.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
 
-        this.printCards(this.game1);
-        this.printCards(this.game2);
-        this.printCards(this.gameModel);
-      }
+      console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
+      console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
+      console.error('S Game Units', this.gameModel.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
+
+      this.printCards(this.game1);
+      this.printCards(this.game2);
+      this.printCards(this.gameModel);
+
       process.exit(1);
 
       return;
@@ -180,10 +246,26 @@ export class GameManager {
     }
   }
 
+  private loadOrGenerateSeed() {
+    if (fs.existsSync('seedfile')) {
+      return parseInt(fs.readFileSync('seedfile').toString());
+    }
+    return new Date().getTime();
+  }
+
+  private saveSeed(seed: number) {
+    fs.writeFileSync('seedfile', seed);
+  }
+
   public startAIGame(ai1: AIConstructor = DefaultAI, ai2: AIConstructor = DefaultAI) {
+    this.seed = this.loadOrGenerateSeed();
+    ServerGame.setSeed(this.seed);
+    console.log('start game with seed', this.seed);
+
+
     // The player always goes first vs the A.I
-    let aiDeck = sample(allDecks);
-    // let aiDeck = deckMap.get('clericalOrder');
+    //let aiDeck = sample(allDecks);
+    let aiDeck = deckMap.get('dominion');
     let animator = new Animator(0.0001);
     console.log("Using deck", aiDeck.name, "(mirror match)");
 
@@ -202,7 +284,7 @@ export class GameManager {
 
     this.ais.push(new ai1(0, this.game1, aiDeck));
     this.ais.push(new ai2(1, this.game2, aiDeck));
-    this.setAISpeed(50, animator);
     this.sendEventsToLocalPlayers(this.gameModel.startGame());
+    this.startAiInDelayMode(1, animator);
   }
 }
