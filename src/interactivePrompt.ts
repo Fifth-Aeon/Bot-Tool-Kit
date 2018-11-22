@@ -2,9 +2,10 @@ import * as figlet from "figlet";
 import * as fs from "fs";
 import * as inquirer from "inquirer";
 import * as path from "path";
-import { createBot, runGame, runTournament, packageBot } from "./commands";
-import { allDecks } from "./game_model/scenarios/decks";
+import { createBot, packageBot, runGame, runTournament } from "./commands";
 import { AIConstructor, aiList } from "./game_model/ai/aiList";
+import { allDecks } from "./game_model/scenarios/decks";
+
 
 const chalk = require("chalk");
 
@@ -94,7 +95,7 @@ const getDeckSet = async (): Promise<string[]> => {
             type: "checkbox",
             name: "deckNames",
             message: "Select the decks that will be used",
-            choices: allDecks.sort()
+            choices: allDecks.map(deck => deck.name).sort()
         }
     ]);
     return (result as any).deckNames as string[];
