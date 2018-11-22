@@ -31,6 +31,11 @@ export class ${typename} extends DefaultAI {
 `;
 
     fs.writeFileSync(`src/bots/${identifier}.ts`, code);
+
+    fs.appendFileSync('src/bots/importBots.ts', 
+`import { ${typename} } from './${identifier}';
+aiList.registerConstructor(${typename});\n\n`);
+
 };
 
 const loadDecks = (deckNames: string[]) => {
