@@ -6,10 +6,9 @@ import { ClientGame } from "./game_model/clientGame";
 import { Game, GameActionType, GameSyncEvent, SyncEventType } from "./game_model/game";
 import { standardFormat } from "./game_model/gameFormat";
 import { ServerGame } from "./game_model/serverGame";
-import { allDecks, deckMap } from "./game_model/scenarios/decks";
 import * as fs from "fs";
-
-
+import { DeckList } from "game_model/deckList";
+import { sample } from "lodash";
 
 export class GameManager {
   private game1: ClientGame;
@@ -28,7 +27,6 @@ export class GameManager {
   }
 
   public reset() {
-    console.log('reset');
     this.stopAI();
     this.game1 = null;
     this.game2 = null;
@@ -214,16 +212,19 @@ export class GameManager {
   }
 
   public async runRoundRobinTournament(
-    ais: Array<AIConstructor> = [DefaultAI, DefaultAI],
-    numberOfGames = 1000
+    ais: Array<AIConstructor>,
+    decks: Array<DeckList>,
+    mirrorMode: boolean,
+    numberOfGamesPerMatchup: number
   ) {
-
     let scores = Array<number>(ais.length).fill(0, 0, ais.length);
     for (let i = 0; i < ais.length; i++) {
       for (let j = 0; j < ais.length; j++) {
         if (i != j) {
-          for (let k = 0; k < numberOfGames; k++) {
-            this.startAIGame(ais[i], ais[j]);
+          for (let k = 0; k < numberOfGamesPerMatchup; k++) {
+            let deck1 = sample(decks);
+            let deck2 = mirrorMode ? deck1 : sample(decks);
+            this.startAIGame(ais[i], ais[j], deck1, deck2);
             await new Promise(resolve => {
               this.onGameEnd = winner => {
                 if (winner === 0) {
@@ -239,10 +240,23 @@ export class GameManager {
       }
     }
 
-    let max = Math.max(...scores);
-    for (let i = 0; i < ais.length; i++) {
-      if (scores[i] === max)
-        console.log('A.I', i, 'Won the tournament (or tied)');
+    console.log('\nTournament Results ------------------------------------------')
+
+    let results = ais.map((ai, i) => {
+      return { 
+        name: `A.I ${i} (${ais[i].name})`,
+        score: scores[i]
+      }
+    }).sort((a, b) => b.score - a.score);
+    let lastScore = results[0].score;
+    let rank = 1;
+    for (let result of results) {
+      if (result.score < lastScore) {
+        lastScore = result.score;
+        rank++;
+      }
+      let rankSuffix = rank == 1 ? 'st' : 'th';
+      console.log(`${rank}${rankSuffix} place: ${result.name} with a score of ${result.score}.`);
     }
   }
 
@@ -257,20 +271,19 @@ export class GameManager {
     fs.writeFileSync('seedfile', seed);
   }
 
-  public startAIGame(ai1: AIConstructor = DefaultAI, ai2: AIConstructor = DefaultAI) {
+  public startAIGame(ai1: AIConstructor = DefaultAI, ai2: AIConstructor = DefaultAI, deck1: DeckList, deck2: DeckList) {
     this.seed = this.loadOrGenerateSeed();
     ServerGame.setSeed(this.seed);
-    console.log('start game with seed', this.seed);
+    console.log('Start game with seed', this.seed);
 
 
     // The player always goes first vs the A.I
     //let aiDeck = sample(allDecks);
-    let aiDeck = deckMap.get('dominion');
     let animator = new Animator(0.0001);
-    console.log("Using deck", aiDeck.name, "(mirror match)");
+    console.log(`${ai1.name} with deck ${deck1.name} vs ${ai2.name} with deck ${deck2.name}`);
 
     // Initialize games
-    this.gameModel = new ServerGame("server", standardFormat, [aiDeck, aiDeck]);
+    this.gameModel = new ServerGame("server", standardFormat, [deck1, deck2]);
     this.game1 = new ClientGame(
       "A.I - 1",
       (type, params) => this.sendGameAction(type, params, 0),
@@ -282,8 +295,8 @@ export class GameManager {
       animator
     );
 
-    this.ais.push(new ai1(0, this.game1, aiDeck));
-    this.ais.push(new ai2(1, this.game2, aiDeck));
+    this.ais.push(new ai1(0, this.game1, deck1));
+    this.ais.push(new ai2(1, this.game2, deck2));
     this.sendEventsToLocalPlayers(this.gameModel.startGame());
     this.startAiInDelayMode(1, animator);
   }

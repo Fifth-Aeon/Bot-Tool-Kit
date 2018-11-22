@@ -18,6 +18,8 @@ export class BerserkerAI extends DefaultAI {
         for (let attacker of potentialAttackers) {    
             this.game.declareAttacker(attacker);
         }
+
+        return true;
     }
 
     /** Never block anything */
