@@ -1,5 +1,5 @@
 import { Unit } from "game_model/unit";
-import { AI, AIConstructor } from "./game_model/ai/ai";
+import { AI } from "./game_model/ai/ai";
 import { DefaultAI } from "./game_model/ai/defaultAi";
 import { Animator } from "./game_model/animator";
 import { ClientGame } from "./game_model/clientGame";
@@ -9,6 +9,7 @@ import { ServerGame } from "./game_model/serverGame";
 import * as fs from "fs";
 import { DeckList } from "game_model/deckList";
 import { sample } from "lodash";
+import { AIConstructor } from "game_model/ai/aiList";
 
 export class GameManager {
   private game1: ClientGame;
@@ -239,12 +240,15 @@ export class GameManager {
         }
       }
     }
+    this.announceResults(ais, scores);
+  }
 
+  private announceResults(ais: Array<AIConstructor>, scores: Array<number>) {
     console.log('\nTournament Results ------------------------------------------')
 
     let results = ais.map((ai, i) => {
-      return { 
-        name: `A.I ${i} (${ais[i].name})`,
+      return {
+        name: `${ai.name} (${i + 1})`,
         score: scores[i]
       }
     }).sort((a, b) => b.score - a.score);
@@ -255,8 +259,17 @@ export class GameManager {
         lastScore = result.score;
         rank++;
       }
-      let rankSuffix = rank == 1 ? 'st' : 'th';
-      console.log(`${rank}${rankSuffix} place: ${result.name} with a score of ${result.score}.`);
+      console.log(`${rank}${this.getRankSuffix(rank)} place: ${result.name} with a score of ${result.score}.`);
+    }
+  }
+
+  private getRankSuffix(rank: number) {
+    if (rank === 1) { 
+      return 'st';
+    } else if (rank === 2) {
+      return 'ed';
+    } else {
+      return 'th';
     }
   }
 

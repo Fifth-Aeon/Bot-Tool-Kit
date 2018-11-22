@@ -1,10 +1,10 @@
 import * as fs from "fs";
+import { AIConstructor } from "./game_model/ai/aiList";
 import { camelCase, capitalize } from "lodash";
 import { BotPackager } from "./botPackager";
 import { GameManager } from "./gameManager";
 import { DefaultAI } from "./game_model/ai/defaultAi";
 import { deckMap } from "./game_model/scenarios/decks";
-import { BerserkerAI } from "./bots/berserker";
 
 const packager = new BotPackager();
 const manager = new GameManager();
@@ -48,6 +48,6 @@ export const runGame = (deckNames: string[]) => {
     manager.startAIGame(DefaultAI, DefaultAI, decks[0], decks[1]);
 }
 
-export const runTournament = (deckNames: string[], mirrorMode: boolean, gamesPerMatchup: number) => {
-    manager.runRoundRobinTournament([DefaultAI, DefaultAI, BerserkerAI], loadDecks(deckNames), mirrorMode, gamesPerMatchup);
+export const runTournament = (ais: AIConstructor[],deckNames: string[], mirrorMode: boolean, gamesPerMatchup: number) => {
+    manager.runRoundRobinTournament(ais, loadDecks(deckNames), mirrorMode, gamesPerMatchup);
 }

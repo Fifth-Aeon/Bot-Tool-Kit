@@ -4,6 +4,7 @@ import * as inquirer from "inquirer";
 import * as path from "path";
 import { createBot, runGame, runTournament, packageBot } from "./commands";
 import { allDecks } from "./game_model/scenarios/decks";
+import { AIConstructor, aiList } from "./game_model/ai/aiList";
 
 const chalk = require("chalk");
 
@@ -99,6 +100,19 @@ const getDeckSet = async (): Promise<string[]> => {
     return (result as any).deckNames as string[];
 }
 
+
+const getAISet = async (): Promise<AIConstructor[]> => {
+    let result = await inquirer.prompt([
+        {
+            type: "checkbox",
+            name: "ais",
+            message: "Select A.Is to play in the tournament",
+            choices: aiList.getConsturctorNames()
+        }
+    ]);
+    return aiList.getConstructorsByName((result as any).ais);
+}
+
 const getMirrorMode = async (): Promise<boolean> => {
     let mirrorMode = "Mirror matches only (both A.I always have the same deck)"
     let result = await inquirer.prompt([
@@ -132,7 +146,7 @@ const getMatchNumber = async (): Promise<number> => {
 }
 
 const getTournamentDetails = async () => {
-    runTournament(await getDeckSet(), await getMirrorMode(), await getMatchNumber());
+    runTournament(await getAISet(), await getDeckSet(), await getMirrorMode(), await getMatchNumber());
 }
 
 const getNewBotDetails = async () => {

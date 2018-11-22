@@ -25,3 +25,4 @@ export class BerserkerAI extends DefaultAI {
     /** Never block anything */
     protected block() {}
 }
+
