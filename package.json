@@ -10,6 +10,7 @@
   "author": "William Ritson",
   "license": "Apache-2.0",
   "dependencies": {
+    "@types/commander": "^2.12.2",
     "@types/figlet": "^1.2.0",
     "@types/inquirer": "0.0.43",
     "@types/webpack": "^4.4.16",

@@ -3,14 +3,21 @@ import { runTournament, runGame, createBot, packageBot } from "./commands";
 import { aiList } from "./game_model/ai/aiList";
 
 export function readArgs() {
-    commander
-        .command('game <bot1> <deck1> <bot2> <deck2>', 'Runs a game between the given A.Is with the given decks')
-        .command('tournament <aiNames> <deckNames> <numberOfGames>', 'Runs an A.I tournament with the given decks and players (lists of names and bots should be comma seperated with no spaces)')
+    commander.command('game <bot1> <deck1> <bot2> <deck2>')
+        .description('Runs a game between the given A.Is with the given decks');
+
+    commander.command('tournament <aiNames> <deckNames> <numberOfGames>')
         .option('-m, --mirror', 'Forces all matches to be mirror matches')
-        .command('create <name>', 'Creates a new bot with the given name.')
-        .command('package <botfile>', 'Packages a bot in the given file into a distributable form.');
+        .description('Runs an A.I tournament with the given decks and players (lists of names and bots should be comma seperated with no spaces)');
+
+    commander.command('create <name>')
+        .description('Creates a new bot with the given name.');
+
+    commander.command('package <botfile>')
+        .description('Packages a bot in the given file into a distributable form.');
 
     commander.parse(process.argv);
+
     let command = commander.args[0];
     switch (command) {
         case 'game':
@@ -41,11 +48,9 @@ function parseGameArgs(bot1: string, deck1: string, bot2: string, deck2: string)
 }
 
 function parseCreatebotArgs(name: string) {
-    throw new Error('zap')
     createBot(name);
 }
 
 function parsePackageBotArgs(botfile: string) {
-    throw new Error('zap')
     packageBot(botfile);
 }
