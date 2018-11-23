@@ -4,34 +4,48 @@ import { aiList } from "./game_model/ai/aiList";
 
 export function readArgs() {
     commander
-        .command('game <deck1> <deck2>', 'Runs a game between the given A.Is with the given decks')
-        .action(function (deck1, deck2) {
-            console.log('game')
-            runGame([deck1, deck2]);
-        });
-        
-    commander.command('tournament <aiNames> <deckNames> <numberOfGames>')
-        .description('Runs an A.I tournament with the given decks and players (lists of names and bots should be comma seperated with no spaces)')
+        .command('game <bot1> <deck1> <bot2> <deck2>', 'Runs a game between the given A.Is with the given decks')
+        .command('tournament <aiNames> <deckNames> <numberOfGames>', 'Runs an A.I tournament with the given decks and players (lists of names and bots should be comma seperated with no spaces)')
         .option('-m, --mirror', 'Forces all matches to be mirror matches')
-        .action(function (aiNames: string, deckNames: string, numberOfGames: string, options) {
-            let constructors = aiList.getConstructorsByName(aiNames.split(','));
-            let deckNamesTokenized = deckNames.split(',');
-            let gameCount = parseInt(numberOfGames);
-            let mirrorMode = options.mirror ? true : false;
-            runTournament(constructors, deckNamesTokenized, mirrorMode, gameCount);
-        });
-
-    commander
         .command('create <name>', 'Creates a new bot with the given name.')
-        .action(function (name) {
-            createBot(name);
-        });
+        .command('package <botfile>', 'Packages a bot in the given file into a distributable form.');
 
-    commander
-        .command('package <botfile>', 'Packages a bot in the given file into a distributable form.')
-        .action(function (botfile) {
-            packageBot(botfile);
-        });
+    commander.parse(process.argv);
+    let command = commander.args[0];
+    switch (command) {
+        case 'game':
+            parseGameArgs(commander.args[1], commander.args[2], commander.args[3], commander.args[4]);
+            break;
+        case 'tournament':
+            parseTournamentArgs(commander.args[1], commander.args[2], commander.args[3], commander.args[4]);
+            break;
+        case 'create':
+            parseCreatebotArgs(commander.args[1]);
+            break;
+        case 'package':
+            parsePackageBotArgs(commander.args[1]);
+            break;
+    }
+}
 
-    commander.parse(process.argv)
+function parseTournamentArgs(aiNames: string, deckNames: string, numberOfGames: string, options) {
+    let constructors = aiList.getConstructorsByName(aiNames.split(','));
+    let deckNamesTokenized = deckNames.split(',');
+    let gameCount = parseInt(numberOfGames);
+    let mirrorMode = options.mirror ? true : false;
+    runTournament(constructors, deckNamesTokenized, mirrorMode, gameCount);
+}
+
+function parseGameArgs(bot1: string, deck1: string, bot2: string, deck2: string) {
+    runGame([deck1, deck2], aiList.getConstructorsByName([bot1, bot2]));
+}
+
+function parseCreatebotArgs(name: string) {
+    throw new Error('zap')
+    createBot(name);
+}
+
+function parsePackageBotArgs(botfile: string) {
+    throw new Error('zap')
+    packageBot(botfile);
 }

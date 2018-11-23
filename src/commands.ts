@@ -48,9 +48,9 @@ const loadDecks = (deckNames: string[]) => {
     })
 }
 
-export const runGame = (deckNames: string[]) => {
+export const runGame = (deckNames: string[], ais: AIConstructor[]) => {
     const decks = loadDecks(deckNames);
-    manager.startAIGame(DefaultAI, DefaultAI, decks[0], decks[1]);
+    manager.startAIGame(ais[0], ais[1], decks[0], decks[1]);
 }
 
 export const runTournament = (ais: AIConstructor[],deckNames: string[], mirrorMode: boolean, gamesPerMatchup: number) => {

@@ -184,6 +184,10 @@ export class GameManager {
         params
       );
 
+      console.log(this.gameModel.lastCardsPlayed);
+      console.log(this.game1.lastCardsPlayed);
+      console.log(this.game2.lastCardsPlayed);
+
       console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
       console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
       console.error('S Game Units', this.gameModel.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
