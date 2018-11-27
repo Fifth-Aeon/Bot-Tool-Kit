@@ -24,7 +24,7 @@ export function readArgs() {
             parseGameArgs(commander.args[1], commander.args[2], commander.args[3], commander.args[4]);
             break;
         case 'tournament':
-            parseTournamentArgs(commander.args[1], commander.args[2], commander.args[3], commander.args[4]);
+            parseTournamentArgs(commander.args[1], commander.args[2], commander.args[3], commander.args[4] || "false");
             break;
         case 'create':
             parseCreatebotArgs(commander.args[1]);
@@ -35,11 +35,11 @@ export function readArgs() {
     }
 }
 
-function parseTournamentArgs(aiNames: string, deckNames: string, numberOfGames: string, options) {
+function parseTournamentArgs(aiNames: string, deckNames: string, numberOfGames: string, mirror: string) {
     let constructors = aiList.getConstructorsByName(aiNames.split(','));
     let deckNamesTokenized = deckNames.split(',');
     let gameCount = parseInt(numberOfGames);
-    let mirrorMode = options.mirror ? true : false;
+    let mirrorMode = mirror === "true" ? true : false;
     runTournament(constructors, deckNamesTokenized, mirrorMode, gameCount);
 }
 

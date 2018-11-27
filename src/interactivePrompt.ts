@@ -5,6 +5,7 @@ import * as path from "path";
 import { createBot, packageBot, runGame, runTournament } from "./commands";
 import { AIConstructor, aiList } from "./game_model/ai/aiList";
 import { allDecks } from "./game_model/scenarios/decks";
+import { DefaultAI } from "./game_model/ai/defaultAi";
 
 
 const chalk = require("chalk");
@@ -86,7 +87,7 @@ const getSingleDeck = async (message: string): Promise<string> => {
 }
 
 const getGameDetails = async () => {
-    runGame([await getSingleDeck('Player 1 deck'), await getSingleDeck('Player 2 deck')]);
+    runGame([await getSingleDeck('Player 1 deck'), await getSingleDeck('Player 2 deck')], [DefaultAI, DefaultAI]);
 }
 
 const getDeckSet = async (): Promise<string[]> => {
