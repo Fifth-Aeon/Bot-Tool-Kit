@@ -13,7 +13,7 @@ process.on('unhandledRejection', up => { throw up });
 let workers = [];
 if (cluster.isMaster) {
     // Start workers and listen for messages containing notifyRequest
-    const numWorkers = 2; // require('os').cpus().length;
+    const numWorkers = require('os').cpus().length;
     console.log('create', numWorkers, 'workers');
     for (let i = 0; i < numWorkers; i++) {
         workers.push(cluster.fork());

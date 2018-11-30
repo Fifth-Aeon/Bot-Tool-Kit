@@ -36,7 +36,7 @@ export class TournamentManager {
         if (this.gameCount === 0) {
             this.onTournamentEnd();
         } else {
-            console.log(`Game completed ${this.gameCount} remain.`);
+            console.log(`Game completed ${this.gameCount} remain.`, this.busyWorkers);
             this.busyWorkers[workerId] = false;
             this.results.push(result);
             this.startGame();
@@ -49,10 +49,11 @@ export class TournamentManager {
             ai1: ai1.name, ai2: ai2.name, deck1: deck1.getSavable(), deck2: deck2.getSavable()
         });
         this.gameCount++;
-        this.startGame();
     }
 
     private startGame() {
+        if (this.gameQueue.length === 0)
+            return;
         for (let i = 0; i < this.busyWorkers.length; i++) {
             if (this.busyWorkers[i] === false) {
                 this.busyWorkers[i] = true;
@@ -95,6 +96,9 @@ export class TournamentManager {
                     this.enqueueGame(ai, ai, decks1[i], decks2[j]);
                 }
             }
+        }
+        for (let i = 0; i < this.workers.length; i++) {
+            this.startGame();
         }
         await new Promise(resolve => {
             this.onTournamentEnd = () => resolve();
