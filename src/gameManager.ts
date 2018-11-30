@@ -21,6 +21,7 @@ export class GameManager {
   private ais: Array<AI> = [];
   private aiTick: any;
   private seed: number;
+  public annoucmentsOn = true;
 
 
   constructor() {
@@ -137,7 +138,7 @@ export class GameManager {
   private watchGame(event: GameSyncEvent) {
     if (event.type == SyncEventType.Ended) {
       this.endGame(event.params.winner, event.params.quit);
-    } else if (event.type == SyncEventType.TurnStart && this.gameModel) {
+    } else if (this.annoucmentsOn && event.type == SyncEventType.TurnStart && this.gameModel) {
       console.log(
         `Turn ${event.params.turnNum} Life Totals ${this.gameModel
           .getPlayer(0)
@@ -211,7 +212,9 @@ export class GameManager {
 
   /** Invoked when the game ends (because a player won) */
   private endGame(winner: number, quit: boolean) {
-    console.log(`A.I ${winner} won the game`);
+    if (this.annoucmentsOn) {
+      console.log(`A.I ${winner} won the game`);
+    }
     this.reset();
     this.onGameEnd(winner);
   }
@@ -223,6 +226,8 @@ export class GameManager {
     numberOfGamesPerMatchup: number
   ) {
     let scores = [0, 0];
+    let gamesCount = decks1.length * decks2.length * numberOfGamesPerMatchup;
+    let gamesDone = 0;
     for (let i = 0; i < decks1.length; i++) {
       for (let j = 0; j < decks2.length; j++) {
         for (let k = 0; k < numberOfGamesPerMatchup; k++) {
@@ -234,6 +239,8 @@ export class GameManager {
               } else {
                 scores[1]++;
               }
+              gamesDone++;
+              console.log(`Finished game ${gamesDone} of ${gamesCount}.`);
               resolve();
             };
           });
@@ -320,13 +327,16 @@ export class GameManager {
   public startAIGame(ai1: AIConstructor = DefaultAI, ai2: AIConstructor = DefaultAI, deck1: DeckList, deck2: DeckList) {
     this.seed = this.loadOrGenerateSeed();
     ServerGame.setSeed(this.seed);
-    console.log('Start game with seed', this.seed);
 
 
     // The player always goes first vs the A.I
     //let aiDeck = sample(allDecks);
     let animator = new Animator(0.0001);
-    console.log(`${ai1.name} with deck ${deck1.name} vs ${ai2.name} with deck ${deck2.name}`);
+
+    if (this.annoucmentsOn) {
+      console.log('Start game with seed', this.seed);
+      console.log(`${ai1.name} with deck ${deck1.name} vs ${ai2.name} with deck ${deck2.name}`);
+    }
 
     // Initialize games
     this.gameModel = new ServerGame("server", standardFormat, [deck1, deck2]);

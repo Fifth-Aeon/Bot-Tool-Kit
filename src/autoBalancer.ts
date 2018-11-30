@@ -8,6 +8,10 @@ import { DefaultAI } from "./game_model/ai/defaultAi";
 export class AutoBalancer {
     private manger: GameManager = new GameManager();
 
+    constructor() {
+        this.manger.annoucmentsOn = false;
+    }
+
     private insertIntoDecklists(suffix: string, card: Card, decks: DeckList[]) {
         let clones = decks.map(deck => deck.clone());
         for (let clone of clones) {
@@ -20,37 +24,44 @@ export class AutoBalancer {
         return clones;
     }
 
-    public balanceCard(card: CardData, goal: Card, decks: DeckList[], threshold: number, games: number) {
+    public async balanceCard(cardData: CardData, goal: Card, decks: DeckList[], threshold: number, games: number): Promise<CardData> {
         // Register the card with the card list so we can construct instances of it
-        cardList.addFactory(cardList.buildCardFactory(card));
-        
+        cardList.addFactory(cardList.buildCardFactory(cardData));
+
         // Construct the deck lists with the target card and the goal card
-        let decksWithTargetCard = this.insertIntoDecklists('target', cardList.getCard(card.id), decks);
+        let decksWithTargetCard = this.insertIntoDecklists('target', cardList.getCard(cardData.id), decks);
         let decksWithGoalCard = this.insertIntoDecklists('goal', goal, decks);
 
         // Play them against eachother and check winrate
-        let outcomes = this.manger.runDeckTournament(DefaultAI, decksWithTargetCard, decksWithGoalCard, games);
+        let outcomes = await this.manger.runDeckTournament(DefaultAI, decksWithTargetCard, decksWithGoalCard, games);
         let winRate = outcomes[0] / (outcomes[0] + outcomes[1]);
+        console.log(`Tournament round complete. Target card won ${outcomes[0]} out of ${outcomes[0] + outcomes[1]} games (${winRate * 100}%).`);
 
         // If winrate of target card too high, nerf it, if too low buff it, if ok then return
         if (winRate > 0.5 + threshold) {
             // The cards win rate is too high, nerf it.
-            this.nerfCard(card);
+            console.log(`Win rate of ${winRate * 100}% is above maximum threshold of ${(0.5 + threshold) * 100}% so nerfing`);
+            this.nerfCard(cardData);
+            return this.balanceCard(cardData, goal, decks, threshold, games);
         } else if (winRate < 0.5 - threshold) {
             // The cards win rate is too low buff it.
-            this.buffCard(card);
+            console.log(`Win rate of ${winRate * 100}% is above maximum threshold of ${(0.5 + threshold) * 100}% so buffing`);
+            this.buffCard(cardData);
+            return this.balanceCard(cardData, goal, decks, threshold, games);
         } else {
             // The card's win rate is within acceptable parameters
-            return card;
+            return cardData;
         }
     }
 
-    private buffCard(card: CardData) : CardData {
+    private buffCard(card: CardData): CardData {
+        console.log('buff');
         card.cost.energy--;
         return card;
     }
 
-    private nerfCard(card: CardData) : CardData {
+    private nerfCard(card: CardData): CardData {
+        console.log('nerf');
         card.cost.energy++;
         return card;
     }
