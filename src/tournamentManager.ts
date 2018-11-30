@@ -1,9 +1,10 @@
 import * as cluster from "cluster";
 import { sample } from "lodash";
+import { AddCardMessage, isAddCardMessage, isStartGameMessage, isTimeoutMessage, MasterToWorkerMessage, MasterToWorkerMessageType, StartGameMesage } from "./masterToWorkerMessages";
 import { GameManager } from "./gameManager";
 import { AIConstructor, aiList } from "./game_model/ai/aiList";
 import { CardData, cardList } from "./game_model/cards/cardList";
-import { DeckList, SavedDeck } from "./game_model/deckList";
+import { DeckList } from "./game_model/deckList";
 import { standardFormat } from "./game_model/gameFormat";
 
 export class TournamentManager {
@@ -48,7 +49,7 @@ export class TournamentManager {
 
     private enqueueGame(ai: AIConstructor, deck1: DeckList, deck2: DeckList, playerNumbers: number[]) {
         this.gameQueue.push({
-            type: 'StartGameMesage',
+            type: MasterToWorkerMessageType.StartGame,
             ai1: ai.name,
             ai2: ai.name,
             deck1: deck1.getSavable(),
@@ -76,7 +77,7 @@ export class TournamentManager {
     public registerCard(card: CardData) {
         for (let worker of this.workers) {
             worker.send({
-                type: 'AddCardToPool',
+                type: MasterToWorkerMessageType.AddCard,
                 cardData: card
             } as AddCardMessage);
         }
@@ -125,7 +126,6 @@ export class TournamentManager {
         mirrorMode: boolean,
         numberOfGamesPerMatchup: number
     ) {
-        let scores = Array<number>(ais.length).fill(0, 0, ais.length);
         for (let i = 0; i < ais.length; i++) {
             for (let j = 0; j < ais.length; j++) {
                 if (i != j) {
@@ -137,6 +137,13 @@ export class TournamentManager {
                 }
             }
         }
+        for (let i = 0; i < this.workers.length; i++) {
+            this.startGame();
+        }
+        await new Promise(resolve => {
+            this.onTournamentEnd = () => resolve();
+        });
+        let scores = this.buildScores();
         this.announceResults(ais, scores);
         return scores;
     }
@@ -174,22 +181,9 @@ export class TournamentManager {
 
 }
 
-interface StartGameMesage {
-    type: 'StartGameMesage'
-    ai1: string,
-    ai2: string,
-    deck1: SavedDeck,
-    deck2: SavedDeck,
-    playerNumbers: number[]
-}
 
-interface AddCardMessage {
-    type: 'AddCardToPool',
-    cardData: CardData
-}
 
 export class TournamentWorker {
-
     private gameManger: GameManager;
     private playerNumbers: number[];
 
@@ -198,23 +192,29 @@ export class TournamentWorker {
         this.gameManger.annoucmentsOn = false;
         this.gameManger.exitOnFailure = false;
 
-        process.on('message', (msg) => {
-            if (typeof msg === 'object' && msg.type === 'StartGameMesage') {
-                this.startGame(msg);
-            } else if (typeof msg === 'object' && msg.type === 'AddCardToPool') {
-                this.addCardToPool(msg);
-            } else if (typeof msg === 'object' && msg.type === 'Quit') {
-                this.gameManger.reset();
-                console.warn(`Worker ${process.pid} timed out.`);
-                process.send(-1);
-            }
-        });
+        process.on('message', (msg: MasterToWorkerMessage) => this.readMessage(msg));
 
         this.gameManger.onGameEnd = (winner) => {
             process.send(this.playerNumbers[winner]);
         }
 
         console.log(process.pid, 'ready.')
+    }
+
+    private readMessage(message: MasterToWorkerMessage) {
+        if (isStartGameMessage(message)) {
+            this.startGame(message);
+        } else if (isAddCardMessage(message)) {
+            this.addCardToPool(message);
+        } else if (isTimeoutMessage(message)) {
+            this.timeout();
+        }
+    }
+
+    private timeout() {
+        this.gameManger.reset();
+        console.warn(`Worker ${process.pid} timed out.`);
+        process.send(-1);
     }
 
     private addCardToPool(params: AddCardMessage) {
