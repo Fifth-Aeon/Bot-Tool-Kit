@@ -6,6 +6,7 @@ import { AIConstructor, aiList } from "./game_model/ai/aiList";
 import { CardData, cardList } from "./game_model/cards/cardList";
 import { DeckList } from "./game_model/deckList";
 import { standardFormat } from "./game_model/gameFormat";
+import { WorkerToMasterMessage, isGameResultMessage } from "./workerToMasterMessages";
 
 export class TournamentManager {
     private gameQueue: StartGameMesage[] = [];
@@ -19,9 +20,9 @@ export class TournamentManager {
     constructor(private timeLimit: number, private workers: cluster.Worker[] = []) {
         for (let i = 0; i < workers.length; i++) {
             let worker = workers[i];
-            worker.on('message', (msg) => {
-                if (typeof msg === 'number') {
-                    this.writeResult(msg, i);
+            worker.on('message', (msg: WorkerToMasterMessage) => {
+                if (isGameResultMessage(msg)) {
+                    this.writeResult(msg.result, i);
                 }
             });
         }
