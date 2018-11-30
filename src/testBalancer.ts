@@ -25,8 +25,7 @@ if (cluster.isMaster) {
         if (workersOnline === numWorkers) {
             setTimeout(() => {
                 runBalancer();
-            }, 3000)
-
+            }, 3000);
         }
     })
 
@@ -36,7 +35,7 @@ if (cluster.isMaster) {
 
 
 function runBalancer() {
-    const balancer = new AutoBalancer(new TournamentManager(workers));
+    const balancer = new AutoBalancer(new TournamentManager(5000, workers));
 
     let cData: UnitData = {
         cardType: CardType.Unit,

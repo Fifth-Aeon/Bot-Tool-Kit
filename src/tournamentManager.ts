@@ -15,7 +15,7 @@ export class TournamentManager {
     private gameCount: number = 0;
     private results = [];
 
-    constructor(private workers: cluster.Worker[] = []) {
+    constructor(private timeLimit: number, private workers: cluster.Worker[] = []) {
         for (let i = 0; i < workers.length; i++) {
             let worker = workers[i];
             worker.on('message', (msg) => {
@@ -68,7 +68,7 @@ export class TournamentManager {
                 this.workers[i].send(msg);
                 this.timeouts[i] = setTimeout(() => {
                     this.workers[i].send({ type: 'Quit' })
-                }, 10000);
+                }, this.timeLimit);
             }
         }
     }
@@ -208,7 +208,6 @@ export class TournamentWorker {
                 console.warn(`Worker ${process.pid} timed out.`);
                 process.send(-1);
             }
-            process.send({ msgFromWorker: 'This is from worker ' + process.pid + '.' })
         });
 
         this.gameManger.onGameEnd = (winner) => {

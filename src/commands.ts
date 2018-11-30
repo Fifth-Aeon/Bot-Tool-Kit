@@ -9,7 +9,7 @@ import { TournamentManager } from "./tournamentManager";
 
 const packager = new BotPackager();
 const manager = new GameManager();
-const tourney = new TournamentManager();
+const tourney = new TournamentManager(5000);
 
 export const packageBot = (filename: string) => {
     packager.buildBot(filename);
