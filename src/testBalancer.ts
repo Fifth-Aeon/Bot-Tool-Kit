@@ -4,22 +4,56 @@ import { UnitData } from "./game_model/cards/cardList";
 import { decapitate } from "./game_model/cards/decayCards";
 import { allDecks } from "./game_model/scenarios/decks";
 import { UnitType } from "./game_model/unit";
+import * as cluster from "cluster";
+import { TournamentManager, TournamentWorker } from "./tournamentManager";
 
-const balancer = new AutoBalancer();
+// Unhandled promise rejections should throw exceptions
+process.on('unhandledRejection', up => { throw up });
 
-let cData: UnitData = {
-    cardType: CardType.Unit, 
-    type: UnitType.Human,
-    cost: {energy: 1},
-    life: 10,
-    damage: 10,
-    id: 'test-card',
-    name: 'Test Card',
-    imageUrl: '',
-    targeter: {id: 'Untargeted', optional: false},
-    mechanics: []
-};
+let workers = [];
+if (cluster.isMaster) {
+    // Start workers and listen for messages containing notifyRequest
+    const numWorkers = 2; // require('os').cpus().length;
+    console.log('create', numWorkers, 'workers');
+    for (let i = 0; i < numWorkers; i++) {
+        workers.push(cluster.fork());
+    }
 
-balancer.balanceCard(cData, decapitate(), allDecks, 0.1, 1).then(balanced => {
-    console.log('res', balanced);
-});
+    let workersOnline = 0;
+    cluster.on('online', () => {
+        workersOnline++;
+        if (workersOnline === numWorkers) {
+            setTimeout(() => {
+                runBalancer();
+            }, 3000)
+
+        }
+    })
+
+} else {
+    new TournamentWorker();
+}
+
+
+function runBalancer() {
+    const balancer = new AutoBalancer(new TournamentManager(workers));
+
+    let cData: UnitData = {
+        cardType: CardType.Unit,
+        type: UnitType.Human,
+        cost: { energy: 1 },
+        life: 10,
+        damage: 10,
+        id: 'test-card',
+        name: 'Test Card',
+        imageUrl: '',
+        targeter: { id: 'Untargeted', optional: false },
+        mechanics: []
+    };
+
+    console.log('start test balancer');
+    balancer.balanceCard(cData, decapitate(), allDecks, 0.1, 1).then(balanced => {
+        console.log('res', balanced);
+        process.exit(0);
+    });
+}

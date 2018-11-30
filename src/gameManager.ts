@@ -1,4 +1,8 @@
+import * as fs from "fs";
+import { AIConstructor } from "game_model/ai/aiList";
+import { DeckList } from "game_model/deckList";
 import { Unit } from "game_model/unit";
+import { sample } from "lodash";
 import { AI } from "./game_model/ai/ai";
 import { DefaultAI } from "./game_model/ai/defaultAi";
 import { Animator } from "./game_model/animator";
@@ -6,25 +10,20 @@ import { ClientGame } from "./game_model/clientGame";
 import { Game, GameActionType, GameSyncEvent, SyncEventType } from "./game_model/game";
 import { standardFormat } from "./game_model/gameFormat";
 import { ServerGame } from "./game_model/serverGame";
-import * as fs from "fs";
-import { DeckList } from "game_model/deckList";
-import { sample } from "lodash";
-import { AIConstructor } from "game_model/ai/aiList";
 
 export class GameManager {
   private game1: ClientGame;
   private game2: ClientGame;
   private gameModel: ServerGame;
 
-  private onGameEnd: (winner: number) => any = () => null;
 
   private ais: Array<AI> = [];
   private aiTick: any;
   private seed: number;
 
+  public onGameEnd: (winner: number) => any = () => null;
   public annoucmentsOn = true;
   public exitOnFailure = true;
-
 
   constructor() {
     this.reset();
@@ -232,100 +231,7 @@ export class GameManager {
     }
   }
 
-  public async runDeckTournament(
-    ai: AIConstructor,
-    decks1: DeckList[],
-    decks2: DeckList[],
-    numberOfGamesPerMatchup: number
-  ) {
-    let scores = [0, 0];
-    let gamesCount = decks1.length * decks2.length * numberOfGamesPerMatchup;
-    let gamesDone = 0;
-    for (let i = 0; i < decks1.length; i++) {
-      for (let j = 0; j < decks2.length; j++) {
-        for (let k = 0; k < numberOfGamesPerMatchup; k++) {
-          this.startAIGame(ai, ai, decks1[i], decks2[j]);
-          await new Promise(resolve => {
-            this.onGameEnd = winner => {
-              if (winner === 0) {
-                scores[0]++;
-              } else if (winner === 1) {
-                scores[1]++;
-              }
-              gamesDone++;
-              console.log(`Finished game ${gamesDone} of ${gamesCount}.`);
-              resolve();
-            };
-          });
-        }
-
-      }
-    }
-    return scores;
-  }
-
-  public async runRoundRobinTournament(
-    ais: Array<AIConstructor>,
-    decks: Array<DeckList>,
-    mirrorMode: boolean,
-    numberOfGamesPerMatchup: number
-  ) {
-    let scores = Array<number>(ais.length).fill(0, 0, ais.length);
-    for (let i = 0; i < ais.length; i++) {
-      for (let j = 0; j < ais.length; j++) {
-        if (i != j) {
-          for (let k = 0; k < numberOfGamesPerMatchup; k++) {
-            let deck1 = sample(decks);
-            let deck2 = mirrorMode ? deck1 : sample(decks);
-            this.startAIGame(ais[i], ais[j], deck1, deck2);
-            await new Promise(resolve => {
-              this.onGameEnd = winner => {
-                if (winner === 0) {
-                  scores[i]++;
-                } else {
-                  scores[j]++;
-                }
-                resolve();
-              };
-            });
-          }
-        }
-      }
-    }
-    this.announceResults(ais, scores);
-    return scores;
-  }
-
-  private announceResults(ais: Array<AIConstructor>, scores: Array<number>) {
-    console.log('\nTournament Results ------------------------------------------')
-
-    let results = ais.map((ai, i) => {
-      return {
-        name: `${ai.name} (${i + 1})`,
-        score: scores[i]
-      }
-    }).sort((a, b) => b.score - a.score);
-    let lastScore = results[0].score;
-    let rank = 1;
-    for (let result of results) {
-      if (result.score < lastScore) {
-        lastScore = result.score;
-        rank++;
-      }
-      console.log(`${rank}${this.getRankSuffix(rank)} place: ${result.name} with a score of ${result.score}.`);
-    }
-  }
-
-  private getRankSuffix(rank: number) {
-    if (rank === 1) {
-      return 'st';
-    } else if (rank === 2) {
-      return 'ed';
-    } else {
-      return 'th';
-    }
-  }
-
+ 
   private loadOrGenerateSeed() {
     if (fs.existsSync('seedfile')) {
       return parseInt(fs.readFileSync('seedfile').toString());
