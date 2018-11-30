@@ -6,6 +6,7 @@ export type WorkerToMasterMessage = ReadyMessage | GameResultMessage;
 
 export interface ReadyMessage {
     type: WorkerToMasterMessageType.Ready;
+    id: number;
 }
 
 export function isReadyMessage(message: WorkerToMasterMessage): message is ReadyMessage {
@@ -14,6 +15,7 @@ export function isReadyMessage(message: WorkerToMasterMessage): message is Ready
 
 export interface GameResultMessage {
     type: WorkerToMasterMessageType.GameResult;
+    id: number;
     result: number;
 }
 

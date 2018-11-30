@@ -6,33 +6,58 @@ import { AIConstructor, aiList } from "./game_model/ai/aiList";
 import { CardData, cardList } from "./game_model/cards/cardList";
 import { DeckList } from "./game_model/deckList";
 import { standardFormat } from "./game_model/gameFormat";
-import { WorkerToMasterMessage, isGameResultMessage } from "./workerToMasterMessages";
+import { WorkerToMasterMessage, isGameResultMessage, isReadyMessage, GameResultMessage, WorkerToMasterMessageType, ReadyMessage } from "./workerToMasterMessages";
+
+enum WorkerState {
+    Starting, Alive, Dead
+}
+
+class WorkerHandle {
+    worker: cluster.Worker;
+    state: WorkerState;
+    timeout: NodeJS.Timeout;
+    busy: boolean;
+}
 
 export class TournamentManager {
     private gameQueue: StartGameMesage[] = [];
-    private busyWorkers: boolean[] = [];
-    private timeouts = [];
+    private workers: Map<number, WorkerHandle> = new Map();
+    private newCards: Array<CardData> = [];
 
     private onTournamentEnd: () => any = () => null;
     private gameCount: number = 0;
     private results = [];
 
-    constructor(private timeLimit: number, private workers: cluster.Worker[] = []) {
-        for (let i = 0; i < workers.length; i++) {
-            let worker = workers[i];
-            worker.on('message', (msg: WorkerToMasterMessage) => {
-                if (isGameResultMessage(msg)) {
-                    this.writeResult(msg.result, i);
-                }
-            });
+    constructor(private timeLimit: number) { }
+
+    public async createWorker() {
+        let worker = cluster.fork();
+        await new Promise(resolve => worker.on('online', () => resolve()));
+
+        for (let card of this.newCards) {
+            this.sendCardToWorker(card, worker);
         }
-        this.busyWorkers = Array<boolean>(workers.length).fill(false);
+        worker.on('message', (msg: WorkerToMasterMessage) => {
+            if (isGameResultMessage(msg)) {
+                this.writeResult(msg.result, msg.id);
+            } else if (isReadyMessage(msg)) {
+                console.log('worker', msg.id, 'is ready');
+                this.workers.set(msg.id, {
+                    busy: false,
+                    state: WorkerState.Alive,
+                    timeout: null,
+                    worker: worker
+                });
+                if (this.gameCount > 0) {
+                    this.startGame();
+                }
+            }
+        });
     }
 
     private reset() {
         this.gameCount = 0;
         this.results = [];
-        this.busyWorkers = Array<boolean>(this.workers.length).fill(false);
     }
 
     private writeResult(result: number, workerId: number) {
@@ -40,9 +65,10 @@ export class TournamentManager {
         if (this.gameCount === 0) {
             this.onTournamentEnd();
         } else {
+            let worker = this.workers.get(workerId);
             console.log(`Game completed ${this.gameCount} remain.`);
-            this.busyWorkers[workerId] = false;
-            clearTimeout(this.timeouts[workerId])
+            worker.busy = false;
+            clearTimeout(worker.timeout);
             this.results.push(result);
             this.startGame();
         }
@@ -63,25 +89,31 @@ export class TournamentManager {
     private startGame() {
         if (this.gameQueue.length === 0)
             return;
-        for (let i = 0; i < this.busyWorkers.length; i++) {
-            if (this.busyWorkers[i] === false) {
-                this.busyWorkers[i] = true;
+
+        for (let workerHandle of Array.from(this.workers.values())) {
+            if (workerHandle.state === WorkerState.Alive && !workerHandle.busy) {
+                workerHandle.busy = true;
                 let msg = this.gameQueue.pop();
-                this.workers[i].send(msg);
-                this.timeouts[i] = setTimeout(() => {
-                    this.workers[i].send({ type: 'Quit' })
+                workerHandle.worker.send(msg);
+                workerHandle.timeout = setTimeout(() => {
+                    workerHandle.worker.send({ type: 'Quit' })
                 }, this.timeLimit);
             }
         }
     }
 
     public registerCard(card: CardData) {
-        for (let worker of this.workers) {
-            worker.send({
-                type: MasterToWorkerMessageType.AddCard,
-                cardData: card
-            } as AddCardMessage);
+        this.newCards.push(card);
+        for (let workerHandle of Array.from(this.workers.values())) {
+            this.sendCardToWorker(card, workerHandle.worker);
         }
+    }
+
+    private sendCardToWorker(card: CardData, worker: cluster.Worker) {
+        worker.send({
+            type: MasterToWorkerMessageType.AddCard,
+            cardData: card
+        } as AddCardMessage);
     }
 
     private buildScores(): number[] {
@@ -112,7 +144,7 @@ export class TournamentManager {
                 }
             }
         }
-        for (let i = 0; i < this.workers.length; i++) {
+        for (let i = 0; i < this.workers.size; i++) {
             this.startGame();
         }
         await new Promise(resolve => {
@@ -138,7 +170,7 @@ export class TournamentManager {
                 }
             }
         }
-        for (let i = 0; i < this.workers.length; i++) {
+        for (let i = 0; i < this.workers.size; i++) {
             this.startGame();
         }
         await new Promise(resolve => {
@@ -182,8 +214,6 @@ export class TournamentManager {
 
 }
 
-
-
 export class TournamentWorker {
     private gameManger: GameManager;
     private playerNumbers: number[];
@@ -196,10 +226,13 @@ export class TournamentWorker {
         process.on('message', (msg: MasterToWorkerMessage) => this.readMessage(msg));
 
         this.gameManger.onGameEnd = (winner) => {
-            process.send(this.playerNumbers[winner]);
+            process.send({
+                type: WorkerToMasterMessageType.GameResult,
+                id: process.pid,
+                result: this.playerNumbers[winner]
+            } as GameResultMessage);
         }
 
-        console.log(process.pid, 'ready.')
     }
 
     private readMessage(message: MasterToWorkerMessage) {
@@ -220,6 +253,11 @@ export class TournamentWorker {
 
     private addCardToPool(params: AddCardMessage) {
         cardList.addFactory(cardList.buildCardFactory(params.cardData));
+
+        process.send({
+            type: WorkerToMasterMessageType.Ready,
+            id: process.pid
+        } as ReadyMessage);
     }
 
     private startGame(params: StartGameMesage) {

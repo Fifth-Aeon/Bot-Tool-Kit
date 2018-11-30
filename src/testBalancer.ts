@@ -10,32 +10,23 @@ import { TournamentManager, TournamentWorker } from "./tournamentManager";
 // Unhandled promise rejections should throw exceptions
 process.on('unhandledRejection', up => { throw up });
 
-let workers = [];
 if (cluster.isMaster) {
-    // Start workers and listen for messages containing notifyRequest
+
     const numWorkers = require('os').cpus().length;
+    const manager = new TournamentManager(5000);
     console.log('create', numWorkers, 'workers');
     for (let i = 0; i < numWorkers; i++) {
-        workers.push(cluster.fork());
+        manager.createWorker();
     }
 
-    let workersOnline = 0;
-    cluster.on('online', () => {
-        workersOnline++;
-        if (workersOnline === numWorkers) {
-            setTimeout(() => {
-                runBalancer();
-            }, 3000);
-        }
-    })
-
+    runBalancer(manager);
 } else {
     new TournamentWorker();
 }
 
 
-function runBalancer() {
-    const balancer = new AutoBalancer(new TournamentManager(5000, workers));
+function runBalancer(manager: TournamentManager) {
+    const balancer = new AutoBalancer(manager);
 
     let cData: UnitData = {
         cardType: CardType.Unit,
