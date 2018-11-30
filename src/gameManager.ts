@@ -21,7 +21,9 @@ export class GameManager {
   private ais: Array<AI> = [];
   private aiTick: any;
   private seed: number;
+
   public annoucmentsOn = true;
+  public exitOnFailure = true;
 
 
   constructor() {
@@ -117,7 +119,8 @@ export class GameManager {
             //console.error('Game 1 cards', this.game1.lastCardsPlayed);
             //console.error('Game 2 cards', this.game2.lastCardsPlayed);
             //console.error('server cards', this.gameModel.lastCardsPlayed);
-            throw new Error();
+            this.onFailure();
+
           }
           aiNum++;
         }
@@ -137,7 +140,7 @@ export class GameManager {
 
   private watchGame(event: GameSyncEvent) {
     if (event.type == SyncEventType.Ended) {
-      this.endGame(event.params.winner, event.params.quit);
+      this.endGame(event.params.winner);
     } else if (this.annoucmentsOn && event.type == SyncEventType.TurnStart && this.gameModel) {
       console.log(
         `Turn ${event.params.turnNum} Life Totals ${this.gameModel
@@ -174,7 +177,6 @@ export class GameManager {
 
     //console.log(`AI ${playerNumber} sent action ${GameActionType[type]} with params`, params);
     if (res === null) {
-      this.saveSeed(this.seed);
 
       console.error(
         "An action sent to game model by",
@@ -197,7 +199,8 @@ export class GameManager {
       this.printCards(this.game2);
       this.printCards(this.gameModel);
 
-      process.exit(1);
+      this.onFailure();
+
 
       return;
     }
@@ -211,12 +214,22 @@ export class GameManager {
   // Game Life cycle ------------------------------------------------
 
   /** Invoked when the game ends (because a player won) */
-  private endGame(winner: number, quit: boolean) {
+  private endGame(winner: number) {
     if (this.annoucmentsOn) {
       console.log(`A.I ${winner} won the game`);
     }
     this.reset();
     this.onGameEnd(winner);
+  }
+
+  /** Executed when a game raises an error. Must execute some kind of policy to recover or exit. */
+  public onFailure() {
+    if (this.exitOnFailure) {
+      this.saveSeed(this.seed);
+      process.exit(1);
+    } else {
+      this.endGame(NaN);
+    }
   }
 
   public async runDeckTournament(
@@ -236,7 +249,7 @@ export class GameManager {
             this.onGameEnd = winner => {
               if (winner === 0) {
                 scores[0]++;
-              } else {
+              } else if (winner === 1) {
                 scores[1]++;
               }
               gamesDone++;

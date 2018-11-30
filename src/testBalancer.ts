@@ -20,6 +20,6 @@ let cData: UnitData = {
     mechanics: []
 };
 
-balancer.balanceCard(cData, decapitate(), allDecks, 0.2, 1).then(balanced => {
+balancer.balanceCard(cData, decapitate(), allDecks, 0.1, 1).then(balanced => {
     console.log('res', balanced);
 });

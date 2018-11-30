@@ -10,6 +10,7 @@ export class AutoBalancer {
 
     constructor() {
         this.manger.annoucmentsOn = false;
+        this.manger.exitOnFailure = false;
     }
 
     private insertIntoDecklists(suffix: string, card: Card, decks: DeckList[]) {
