@@ -216,6 +216,34 @@ export class GameManager {
     this.onGameEnd(winner);
   }
 
+  public async runDeckTournament(
+    ai: AIConstructor,
+    decks1: DeckList[],
+    decks2: DeckList[],
+    numberOfGamesPerMatchup: number
+  ) {
+    let scores = [0, 0];
+    for (let i = 0; i < decks1.length; i++) {
+      for (let j = 0; j < decks2.length; j++) {
+        for (let k = 0; k < numberOfGamesPerMatchup; k++) {
+          this.startAIGame(ai, ai, decks1[i], decks2[j]);
+          await new Promise(resolve => {
+            this.onGameEnd = winner => {
+              if (winner === 0) {
+                scores[0]++;
+              } else {
+                scores[1]++;
+              }
+              resolve();
+            };
+          });
+        }
+
+      }
+    }
+    return scores;
+  }
+
   public async runRoundRobinTournament(
     ais: Array<AIConstructor>,
     decks: Array<DeckList>,
@@ -245,6 +273,7 @@ export class GameManager {
       }
     }
     this.announceResults(ais, scores);
+    return scores;
   }
 
   private announceResults(ais: Array<AIConstructor>, scores: Array<number>) {
@@ -268,7 +297,7 @@ export class GameManager {
   }
 
   private getRankSuffix(rank: number) {
-    if (rank === 1) { 
+    if (rank === 1) {
       return 'st';
     } else if (rank === 2) {
       return 'ed';
