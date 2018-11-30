@@ -1,14 +1,16 @@
-import { AIConstructor, aiList } from "./game_model/ai/aiList";
-import { DeckList, SavedDeck } from "./game_model/deckList";
-import { GameManager } from "./gameManager";
 import * as cluster from "cluster";
 import { sample } from "lodash";
-import { GameFormat, standardFormat } from "./game_model/gameFormat";
-import { cardList, CardData } from "./game_model/cards/cardList";
+import { GameManager } from "./gameManager";
+import { AIConstructor, aiList } from "./game_model/ai/aiList";
+import { CardData, cardList } from "./game_model/cards/cardList";
+import { DeckList, SavedDeck } from "./game_model/deckList";
+import { standardFormat } from "./game_model/gameFormat";
 
 export class TournamentManager {
     private gameQueue: StartGameMesage[] = [];
     private busyWorkers: boolean[] = [];
+    private timeouts = [];
+
     private onTournamentEnd: () => any = () => null;
     private gameCount: number = 0;
     private results = [];
@@ -38,6 +40,7 @@ export class TournamentManager {
         } else {
             console.log(`Game completed ${this.gameCount} remain.`, this.busyWorkers);
             this.busyWorkers[workerId] = false;
+            clearTimeout(this.timeouts[workerId])
             this.results.push(result);
             this.startGame();
         }
@@ -59,6 +62,9 @@ export class TournamentManager {
                 this.busyWorkers[i] = true;
                 let msg = this.gameQueue.pop();
                 this.workers[i].send(msg);
+                this.timeouts[i] = setTimeout(() => {
+                    this.workers[i].send({type: 'Quit'})
+                }, 10000);
             }
         }
     }
@@ -188,14 +194,16 @@ export class TournamentWorker {
                 this.startGame(msg);
             } else if (typeof msg === 'object' && msg.type === 'AddCardToPool') {
                 this.addCardToPool(msg);
+            } else if (typeof msg === 'object' && msg.type === 'Quit') {
+                this.gameManger.reset();
+                console.warn(`Worker ${process.pid} timed out.`);
+                process.send(-1);
             }
             process.send({ msgFromWorker: 'This is from worker ' + process.pid + '.' })
         });
 
         this.gameManger.onGameEnd = (winner) => {
-            console.log(`Worker ${process.pid} finished game ${winner} won`);
             process.send(winner);
-            cluster.worker.send('zoop');
         }
 
         console.log(process.pid, 'ready.')
@@ -204,13 +212,10 @@ export class TournamentWorker {
     }
 
     private addCardToPool(params: AddCardMessage) {
-        console.log(process.pid, 'add card', params.cardData.name);
         cardList.addFactory(cardList.buildCardFactory(params.cardData));
-
     }
 
     private startGame(params: StartGameMesage) {
-        console.log(process.pid, 'starting game');
         let ais = aiList.getConstructorsByName([params.ai1, params.ai2]);
         this.gameManger.startAIGame(ais[0], ais[1], new DeckList(standardFormat, params.deck1), new DeckList(standardFormat, params.deck2));
     }
