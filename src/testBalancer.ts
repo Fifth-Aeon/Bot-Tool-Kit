@@ -52,7 +52,7 @@ function runBalancer() {
     };
 
     console.log('start test balancer');
-    balancer.balanceCard(cData, decapitate(), allDecks, 0.1, 2).then(balanced => {
+    balancer.balanceCard(cData, decapitate(), allDecks, 0.05, 5).then(balanced => {
         console.log('res', balanced);
         process.exit(0);
     });

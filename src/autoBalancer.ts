@@ -56,13 +56,13 @@ export class AutoBalancer {
     }
 
     private buffCard(card: CardData): CardData {
-        console.log('buff');
+        console.log(`Buff: decreasing energy cost from ${card.cost.energy} to ${card.cost.energy - 1}.`);
         card.cost.energy--;
         return card;
     }
 
     private nerfCard(card: CardData): CardData {
-        console.log('nerf');
+        console.log(`Nerf: increasing energy cost from ${card.cost.energy} to ${card.cost.energy + 1}.`);
         card.cost.energy++;
         return card;
     }

@@ -38,7 +38,7 @@ export class TournamentManager {
         if (this.gameCount === 0) {
             this.onTournamentEnd();
         } else {
-            console.log(`Game completed ${this.gameCount} remain.`, this.busyWorkers);
+            console.log(`Game completed ${this.gameCount} remain.`);
             this.busyWorkers[workerId] = false;
             clearTimeout(this.timeouts[workerId])
             this.results.push(result);
@@ -46,10 +46,14 @@ export class TournamentManager {
         }
     }
 
-    private enqueueGame(ai1: AIConstructor, ai2: AIConstructor, deck1: DeckList, deck2: DeckList) {
+    private enqueueGame(ai: AIConstructor, deck1: DeckList, deck2: DeckList, playerNumbers: number[]) {
         this.gameQueue.push({
             type: 'StartGameMesage',
-            ai1: ai1.name, ai2: ai2.name, deck1: deck1.getSavable(), deck2: deck2.getSavable()
+            ai1: ai.name,
+            ai2: ai.name,
+            deck1: deck1.getSavable(),
+            deck2: deck2.getSavable(),
+            playerNumbers: playerNumbers
         });
         this.gameCount++;
     }
@@ -63,7 +67,7 @@ export class TournamentManager {
                 let msg = this.gameQueue.pop();
                 this.workers[i].send(msg);
                 this.timeouts[i] = setTimeout(() => {
-                    this.workers[i].send({type: 'Quit'})
+                    this.workers[i].send({ type: 'Quit' })
                 }, 10000);
             }
         }
@@ -99,7 +103,10 @@ export class TournamentManager {
         for (let i = 0; i < decks1.length; i++) {
             for (let j = 0; j < decks2.length; j++) {
                 for (let k = 0; k < numberOfGamesPerMatchup; k++) {
-                    this.enqueueGame(ai, ai, decks1[i], decks2[j]);
+                    let deck1 = decks1[i];
+                    let deck2 = decks2[i];
+                    this.enqueueGame(ai, deck1, deck2, [0, 1]);
+                    this.enqueueGame(ai, deck2, deck1, [1, 0]);
                 }
             }
         }
@@ -125,7 +132,7 @@ export class TournamentManager {
                     for (let k = 0; k < numberOfGamesPerMatchup; k++) {
                         let deck1 = sample(decks);
                         let deck2 = mirrorMode ? deck1 : sample(decks);
-                        this.enqueueGame(ais[i], ais[j], deck1, deck2);
+                        this.enqueueGame(ais[i], deck1, deck2, [0, 1]);
                     }
                 }
             }
@@ -172,7 +179,8 @@ interface StartGameMesage {
     ai1: string,
     ai2: string,
     deck1: SavedDeck,
-    deck2: SavedDeck
+    deck2: SavedDeck,
+    playerNumbers: number[]
 }
 
 interface AddCardMessage {
@@ -183,6 +191,7 @@ interface AddCardMessage {
 export class TournamentWorker {
 
     private gameManger: GameManager;
+    private playerNumbers: number[];
 
     constructor() {
         this.gameManger = new GameManager();
@@ -203,12 +212,10 @@ export class TournamentWorker {
         });
 
         this.gameManger.onGameEnd = (winner) => {
-            process.send(winner);
+            process.send(this.playerNumbers[winner]);
         }
 
         console.log(process.pid, 'ready.')
-        process.send('readdy freadys');
-
     }
 
     private addCardToPool(params: AddCardMessage) {
@@ -218,6 +225,7 @@ export class TournamentWorker {
     private startGame(params: StartGameMesage) {
         let ais = aiList.getConstructorsByName([params.ai1, params.ai2]);
         this.gameManger.startAIGame(ais[0], ais[1], new DeckList(standardFormat, params.deck1), new DeckList(standardFormat, params.deck2));
+        this.playerNumbers = params.playerNumbers;
     }
 
 }
