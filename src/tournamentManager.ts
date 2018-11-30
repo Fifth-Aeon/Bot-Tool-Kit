@@ -1,6 +1,6 @@
 import * as cluster from "cluster";
 import { sample } from "lodash";
-import { AddCardMessage, isAddCardMessage, isStartGameMessage, isTimeoutMessage, MasterToWorkerMessage, MasterToWorkerMessageType, StartGameMesage } from "./masterToWorkerMessages";
+import { AddCardMessage, isAddCardMessage, isStartGameMessage, isTimeoutMessage, MasterToWorkerMessage, MasterToWorkerMessageType, StartGameMesage, TimeoutMessage } from "./masterToWorkerMessages";
 import { GameManager } from "./gameManager";
 import { AIConstructor, aiList } from "./game_model/ai/aiList";
 import { CardData, cardList } from "./game_model/cards/cardList";
@@ -8,14 +8,9 @@ import { DeckList } from "./game_model/deckList";
 import { standardFormat } from "./game_model/gameFormat";
 import { WorkerToMasterMessage, isGameResultMessage, isReadyMessage, GameResultMessage, WorkerToMasterMessageType, ReadyMessage } from "./workerToMasterMessages";
 
-enum WorkerState {
-    Starting, Alive, Dead
-}
-
 class WorkerHandle {
     worker: cluster.Worker;
-    state: WorkerState;
-    timeout: NodeJS.Timeout;
+    runtime: number;
     busy: boolean;
 }
 
@@ -28,7 +23,22 @@ export class TournamentManager {
     private gameCount: number = 0;
     private results = [];
 
-    constructor(private timeLimit: number) { }
+    constructor(private timeLimit: number) {
+        const checkTimeoutInterval = 500;
+        setInterval(() => {
+            for (let workerHandle of Array.from(this.workers.values())) {
+                if (workerHandle.busy)
+                    workerHandle.runtime += checkTimeoutInterval;
+                if (workerHandle.runtime >= this.timeLimit) {
+                    console.warn(`Worker ${workerHandle.worker.id}:${workerHandle.worker.process.pid} timed out. Killing it.`)
+                    workerHandle.worker.kill();
+                    workerHandle.worker.destroy();
+                    this.gameCount--;
+                }
+            }
+            this.timeLimit
+        }, checkTimeoutInterval);
+     }
 
     public async createWorker() {
         let worker = cluster.fork();
@@ -44,14 +54,18 @@ export class TournamentManager {
                 console.log('worker', msg.id, 'is ready');
                 this.workers.set(msg.id, {
                     busy: false,
-                    state: WorkerState.Alive,
-                    timeout: null,
+                    runtime: 0,
                     worker: worker
                 });
                 if (this.gameCount > 0) {
                     this.startGame();
                 }
             }
+        });
+        worker.on('disconnect', () => {
+            this.workers.delete(worker.process.pid);
+            console.warn(`Worker ${worker.id}:${worker.process.pid} disconnected. Spawning a new worker.`);
+            this.createWorker();
         });
     }
 
@@ -68,7 +82,7 @@ export class TournamentManager {
             let worker = this.workers.get(workerId);
             console.log(`Game completed ${this.gameCount} remain.`);
             worker.busy = false;
-            clearTimeout(worker.timeout);
+            worker.runtime = 0;
             this.results.push(result);
             this.startGame();
         }
@@ -91,15 +105,18 @@ export class TournamentManager {
             return;
 
         for (let workerHandle of Array.from(this.workers.values())) {
-            if (workerHandle.state === WorkerState.Alive && !workerHandle.busy) {
+            if (!workerHandle.busy && workerHandle.worker.process.connected) {
                 workerHandle.busy = true;
                 let msg = this.gameQueue.pop();
                 workerHandle.worker.send(msg);
-                workerHandle.timeout = setTimeout(() => {
-                    workerHandle.worker.send({ type: 'Quit' })
-                }, this.timeLimit);
             }
         }
+    }
+
+    private sendMessageToWorker(worker: cluster.Worker, message: MasterToWorkerMessage) {
+        if (!worker.process.connected)
+            return;
+        worker.send(message);
     }
 
     public registerCard(card: CardData) {
@@ -110,7 +127,7 @@ export class TournamentManager {
     }
 
     private sendCardToWorker(card: CardData, worker: cluster.Worker) {
-        worker.send({
+        this.sendMessageToWorker(worker, {
             type: MasterToWorkerMessageType.AddCard,
             cardData: card
         } as AddCardMessage);
@@ -233,6 +250,10 @@ export class TournamentWorker {
             } as GameResultMessage);
         }
 
+        process.send({
+            type: WorkerToMasterMessageType.Ready,
+            id: process.pid
+        } as ReadyMessage);
     }
 
     private readMessage(message: MasterToWorkerMessage) {
@@ -253,11 +274,6 @@ export class TournamentWorker {
 
     private addCardToPool(params: AddCardMessage) {
         cardList.addFactory(cardList.buildCardFactory(params.cardData));
-
-        process.send({
-            type: WorkerToMasterMessageType.Ready,
-            id: process.pid
-        } as ReadyMessage);
     }
 
     private startGame(params: StartGameMesage) {
