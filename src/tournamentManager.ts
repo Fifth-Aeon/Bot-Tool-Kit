@@ -32,7 +32,6 @@ export class TournamentManager {
                 if (workerHandle.runtime >= this.timeLimit) {
                     console.warn(`Worker ${workerHandle.worker.id}:${workerHandle.worker.process.pid} timed out. Killing it.`)
                     workerHandle.worker.kill();
-                    workerHandle.worker.destroy();
                     this.gameCount--;
                 }
             }
