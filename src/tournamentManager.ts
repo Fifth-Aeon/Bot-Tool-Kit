@@ -1,15 +1,15 @@
 import * as cluster from "cluster";
 import { sample } from "lodash";
-import { AddCardMessage, isAddCardMessage, isStartGameMessage, isTimeoutMessage, MasterToWorkerMessage, MasterToWorkerMessageType, StartGameMesage, TimeoutMessage } from "./masterToWorkerMessages";
 import { GameManager } from "./gameManager";
 import { AIConstructor, aiList } from "./game_model/ai/aiList";
 import { CardData, cardList } from "./game_model/cards/cardList";
 import { DeckList } from "./game_model/deckList";
 import { standardFormat } from "./game_model/gameFormat";
-import { WorkerToMasterMessage, isGameResultMessage, isReadyMessage, GameResultMessage, WorkerToMasterMessageType, ReadyMessage } from "./workerToMasterMessages";
+import { AddCardMessage, MasterToWorkerMessage, MasterToWorkerMessageType, StartGameMesage } from "./masterToWorkerMessages";
+import { GameResultMessage, ReadyMessage, WorkerToMasterMessage, WorkerToMasterMessageType } from "./workerToMasterMessages";
 
-class WorkerHandle {
-    worker: cluster.Worker;
+interface WorkerHandle {
+    readonly worker: cluster.Worker;
     runtime: number;
     busy: boolean;
 }
@@ -37,7 +37,7 @@ export class TournamentManager {
             }
             this.timeLimit
         }, checkTimeoutInterval);
-     }
+    }
 
     public async createWorker() {
         let worker = cluster.fork();
@@ -47,9 +47,9 @@ export class TournamentManager {
             this.sendCardToWorker(card, worker);
         }
         worker.on('message', (msg: WorkerToMasterMessage) => {
-            if (isGameResultMessage(msg)) {
+            if (msg.type === WorkerToMasterMessageType.GameResult) {
                 this.writeResult(msg.result, msg.id);
-            } else if (isReadyMessage(msg)) {
+            } else {
                 console.log('worker', msg.id, 'is ready');
                 this.workers.set(msg.id, {
                     busy: false,
@@ -256,12 +256,17 @@ export class TournamentWorker {
     }
 
     private readMessage(message: MasterToWorkerMessage) {
-        if (isStartGameMessage(message)) {
-            this.startGame(message);
-        } else if (isAddCardMessage(message)) {
-            this.addCardToPool(message);
-        } else if (isTimeoutMessage(message)) {
-            this.timeout();
+        switch (message.type) {
+            case MasterToWorkerMessageType.StartGame:
+                this.startGame(message);
+                break;
+            case MasterToWorkerMessageType.AddCard:
+                this.addCardToPool(message);
+                break;
+            case MasterToWorkerMessageType.Timeout:
+                this.timeout();
+                break;
+            default: return assertNever(message);
         }
     }
 
@@ -281,4 +286,8 @@ export class TournamentWorker {
         this.playerNumbers = params.playerNumbers;
     }
 
+}
+
+function assertNever(x: never): never {
+    throw new Error("Unexpected object: " + x);
 }

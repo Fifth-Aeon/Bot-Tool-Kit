@@ -5,20 +5,13 @@ export enum WorkerToMasterMessageType {
 export type WorkerToMasterMessage = ReadyMessage | GameResultMessage;
 
 export interface ReadyMessage {
-    type: WorkerToMasterMessageType.Ready;
-    id: number;
+    readonly type: WorkerToMasterMessageType.Ready;
+    readonly id: number;
 }
 
-export function isReadyMessage(message: WorkerToMasterMessage): message is ReadyMessage {
-    return message.type === WorkerToMasterMessageType.Ready;
-}
 
 export interface GameResultMessage {
-    type: WorkerToMasterMessageType.GameResult;
-    id: number;
-    result: number;
-}
-
-export function isGameResultMessage(message: WorkerToMasterMessage): message is GameResultMessage {
-    return message.type === WorkerToMasterMessageType.GameResult;
+    readonly type: WorkerToMasterMessageType.GameResult;
+    readonly id: number;
+    readonly result: number;
 }
