@@ -75,11 +75,11 @@ export class TournamentManager {
 
     private writeResult(result: number, workerId: number) {
         this.gameCount--;
-        if (this.gameCount === 0) {
+        if (this.gameCount <= 0) {
             this.onTournamentEnd();
         } else {
             let worker = this.workers.get(workerId);
-            console.log(`Game completed ${this.gameCount} remain.`);
+            //console.log(`Game completed ${this.gameCount} remain.`);
             worker.busy = false;
             worker.runtime = 0;
             this.results.push(result);

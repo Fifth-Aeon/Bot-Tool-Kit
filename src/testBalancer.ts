@@ -1,4 +1,4 @@
-import { AutoBalancer } from "./autoBalancer";
+import { AutoBalancer, ComprehensiveSearch, BalanceMethods } from "./autoBalancer";
 import { CardType } from "./game_model/card";
 import { UnitData } from "./game_model/cards/cardList";
 import { decapitate } from "./game_model/cards/decayCards";
@@ -11,6 +11,8 @@ import { TournamentManager, TournamentWorker } from "./tournamentManager";
 process.on('unhandledRejection', up => { throw up });
 
 if (cluster.isMaster) {
+
+
 
     const numWorkers = require('os').cpus().length;
     const manager = new TournamentManager(8500);
@@ -41,8 +43,14 @@ function runBalancer(manager: TournamentManager) {
         mechanics: []
     };
 
+    let config1: ComprehensiveSearch = {
+        kind: BalanceMethods.ComprehensiveSearch,
+        searchParameters: [{ id: 'energy', min: 6, max: 9 }, { id: 'growth', min: 0, max: 6 }],
+        trialsPerConfiguraiton: 1
+    }
+
     console.log('start test balancer');
-    balancer.balanceCard(cData, decapitate(), allDecks, 0.05, 5).then(balanced => {
+    balancer.balanceCard(cData, decapitate(), allDecks, config1).then(balanced => {
         console.log('res', balanced);
         process.exit(0);
     });
