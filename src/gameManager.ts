@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import { AIConstructor } from "game_model/ai/aiList";
-import { DeckList } from "game_model/deckList";
+import { DeckList, SavedDeck } from "game_model/deckList";
 import { Unit } from "game_model/unit";
 import { sample } from "lodash";
 import { AI } from "./game_model/ai/ai";
@@ -10,6 +10,15 @@ import { ClientGame } from "./game_model/clientGame";
 import { Game, GameActionType, GameSyncEvent, SyncEventType } from "./game_model/game";
 import { standardFormat } from "./game_model/gameFormat";
 import { ServerGame } from "./game_model/serverGame";
+
+
+export interface GameInfo {
+    readonly ai1: string;
+    readonly ai2: string;
+    readonly deck1: SavedDeck;
+    readonly deck2: SavedDeck;
+    readonly playerNumbers: number[];
+}
 
 export class GameManager {
   private game1: ClientGame;

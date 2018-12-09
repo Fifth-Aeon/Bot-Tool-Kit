@@ -1,9 +1,9 @@
 import * as cluster from "cluster";
 import { sample } from "lodash";
-import { GameManager } from "./gameManager";
+import { GameManager, GameInfo } from "./gameManager";
 import { AIConstructor, aiList } from "./game_model/ai/aiList";
 import { CardData, cardList } from "./game_model/cards/cardList";
-import { DeckList } from "./game_model/deckList";
+import { DeckList, SavedDeck } from "./game_model/deckList";
 import { standardFormat } from "./game_model/gameFormat";
 import { AddCardMessage, MasterToWorkerMessage, MasterToWorkerMessageType, StartGameMesage } from "./masterToWorkerMessages";
 import { GameResultMessage, ReadyMessage, WorkerToMasterMessage, WorkerToMasterMessageType } from "./workerToMasterMessages";
@@ -12,10 +12,12 @@ interface WorkerHandle {
     readonly worker: cluster.Worker;
     runtime: number;
     busy: boolean;
+    game: GameInfo;
 }
 
+
 export class TournamentManager {
-    private gameQueue: StartGameMesage[] = [];
+    private gameQueue: GameInfo[] = [];
     private workers: Map<number, WorkerHandle> = new Map();
     private newCards: Array<CardData> = [];
 
@@ -32,7 +34,7 @@ export class TournamentManager {
                 if (workerHandle.runtime >= this.timeLimit) {
                     console.warn(`Worker ${workerHandle.worker.id}:${workerHandle.worker.process.pid} timed out. Killing it.`)
                     workerHandle.worker.kill();
-                    this.gameCount--;
+                    this.gameQueue.push(workerHandle.game);
                 }
             }
             this.timeLimit
@@ -48,13 +50,18 @@ export class TournamentManager {
         }
         worker.on('message', (msg: WorkerToMasterMessage) => {
             if (msg.type === WorkerToMasterMessageType.GameResult) {
-                this.writeResult(msg.result, msg.id);
+                if (msg.error) {
+                    console.warn('got error esult, requing');
+                    this.gameQueue.push(msg.game);
+                } else
+                    this.writeResult(msg.winner, msg.id);
             } else {
-                console.log('worker', msg.id, 'is ready');
+                console.warn('worker', msg.id, 'is ready');
                 this.workers.set(msg.id, {
                     busy: false,
                     runtime: 0,
-                    worker: worker
+                    worker: worker,
+                    game: null
                 });
                 if (this.gameCount > 0) {
                     this.startGame();
@@ -75,6 +82,7 @@ export class TournamentManager {
 
     private writeResult(result: number, workerId: number) {
         this.gameCount--;
+        this.results.push(result);
         if (this.gameCount <= 0) {
             this.onTournamentEnd();
         } else {
@@ -82,14 +90,12 @@ export class TournamentManager {
             //console.log(`Game completed ${this.gameCount} remain.`);
             worker.busy = false;
             worker.runtime = 0;
-            this.results.push(result);
             this.startGame();
         }
     }
 
     private enqueueGame(ai: AIConstructor, deck1: DeckList, deck2: DeckList, playerNumbers: number[]) {
         this.gameQueue.push({
-            type: MasterToWorkerMessageType.StartGame,
             ai1: ai.name,
             ai2: ai.name,
             deck1: deck1.getSavable(),
@@ -105,8 +111,12 @@ export class TournamentManager {
 
         for (let workerHandle of Array.from(this.workers.values())) {
             if (!workerHandle.busy && workerHandle.worker.process.connected) {
+                let msg: StartGameMesage = {
+                    type: MasterToWorkerMessageType.StartGame,
+                    game: this.gameQueue.pop()
+                };
                 workerHandle.busy = true;
-                let msg = this.gameQueue.pop();
+                workerHandle.game = msg.game;
                 workerHandle.worker.send(msg);
             }
         }
@@ -233,6 +243,7 @@ export class TournamentManager {
 export class TournamentWorker {
     private gameManger: GameManager;
     private playerNumbers: number[];
+    private gameInfo: GameInfo;
 
     constructor() {
         this.gameManger = new GameManager();
@@ -242,11 +253,22 @@ export class TournamentWorker {
         process.on('message', (msg: MasterToWorkerMessage) => this.readMessage(msg));
 
         this.gameManger.onGameEnd = (winner) => {
-            process.send({
-                type: WorkerToMasterMessageType.GameResult,
-                id: process.pid,
-                result: this.playerNumbers[winner]
-            } as GameResultMessage);
+            if (isNaN(winner)) {
+                process.send({
+                    type: WorkerToMasterMessageType.GameResult,
+                    id: process.pid,
+                    error: true,
+                    game: this.gameInfo
+                } as GameResultMessage);
+            } else {
+                process.send({
+                    type: WorkerToMasterMessageType.GameResult,
+                    id: process.pid,
+                    error: false,
+                    winner: this.playerNumbers[winner]
+                } as GameResultMessage);
+            }
+
         }
 
         process.send({
@@ -281,9 +303,12 @@ export class TournamentWorker {
     }
 
     private startGame(params: StartGameMesage) {
-        let ais = aiList.getConstructorsByName([params.ai1, params.ai2]);
-        this.gameManger.startAIGame(ais[0], ais[1], new DeckList(standardFormat, params.deck1), new DeckList(standardFormat, params.deck2));
-        this.playerNumbers = params.playerNumbers;
+        let ais = aiList.getConstructorsByName([params.game.ai1, params.game.ai2]);
+        this.gameInfo = params.game;
+        this.gameManger.startAIGame(ais[0], ais[1],
+            new DeckList(standardFormat, params.game.deck1),
+            new DeckList(standardFormat, params.game.deck2));
+        this.playerNumbers = params.game.playerNumbers;
     }
 
 }

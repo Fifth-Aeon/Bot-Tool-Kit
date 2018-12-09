@@ -1,3 +1,5 @@
+import { GameInfo } from "./gameManager";
+
 export enum WorkerToMasterMessageType {
     Ready, GameResult
 }
@@ -13,5 +15,8 @@ export interface ReadyMessage {
 export interface GameResultMessage {
     readonly type: WorkerToMasterMessageType.GameResult;
     readonly id: number;
-    readonly result: number;
+
+    readonly error: boolean;
+    readonly winner?: number;
+    readonly game?: GameInfo;
 }

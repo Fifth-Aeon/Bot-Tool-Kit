@@ -30,7 +30,20 @@ if (cluster.isMaster) {
 function runBalancer(manager: TournamentManager) {
     const balancer = new AutoBalancer(manager);
 
-    let cData: UnitData = {
+    let plainUnit: UnitData = {
+        cardType: CardType.Unit,
+        type: UnitType.Human,
+        cost: { energy: 1 },
+        life: 0,
+        damage: 0,
+        id: 'test-card',
+        name: 'Test Card',
+        imageUrl: '',
+        targeter: { id: 'Untargeted', optional: false },
+        mechanics: []
+    };
+
+    let tenTenUnit: UnitData = {
         cardType: CardType.Unit,
         type: UnitType.Human,
         cost: { energy: 1 },
@@ -43,15 +56,27 @@ function runBalancer(manager: TournamentManager) {
         mechanics: []
     };
 
-    let config1: ComprehensiveSearch = {
+    let growthCostSearch: ComprehensiveSearch = {
         kind: BalanceMethods.ComprehensiveSearch,
-        searchParameters: [{ id: 'energy', min: 6, max: 9 }, { id: 'growth', min: 0, max: 6 }],
+        searchParameters: [{ id: 'energy', min: 0, max: 10 }, { id: 'growth', min: 0, max: 6 }],
         trialsPerConfiguraiton: 1
     }
 
-    console.log('start test balancer');
-    balancer.balanceCard(cData, decapitate(), allDecks, config1).then(balanced => {
-        console.log('res', balanced);
+    let fullSearch: ComprehensiveSearch = {
+        kind: BalanceMethods.ComprehensiveSearch,
+        searchParameters: [
+            { id: 'energy', min: 1, max: 10 }, 
+            { id: 'growth', min: 0, max: 6 },
+            { id: 'damage', min: 0, max: 10 },
+            { id: 'life', min: 0, max: 10 },
+        ],
+        trialsPerConfiguraiton: 1
+    }
+
+    console.log('Balancing card', tenTenUnit);
+    balancer.balanceCard(tenTenUnit, decapitate(), allDecks, growthCostSearch).then(balanced => {
+        console.log('Result ----------------------');
+        console.log(balanced);
         process.exit(0);
     });
 }
