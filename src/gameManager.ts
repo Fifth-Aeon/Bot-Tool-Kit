@@ -57,19 +57,19 @@ export class GameManager {
 
   private printEvents(events: GameSyncEvent[]) {
     for (let event of events) {
-      console.log(SyncEventType[event.type], event.params);
+      console.error(SyncEventType[event.type], event.params);
     }
   }
 
   private printGameEvents(game: Game, num: number) {
     let events = this.game1.getPastEvents().slice(this.game1.getPastEvents().length - num);
 
-    console.log();
-    console.log(`Last ${num} ${game.getName()} events`);
+    console.error();
+    console.error(`Last ${num} ${game.getName()} events`);
     for (let event of events) {
-      console.log(SyncEventType[event.type], event.params);
+      console.error(SyncEventType[event.type], event.params);
     }
-    console.log();
+    console.error();
 
   }
 
@@ -107,9 +107,9 @@ export class GameManager {
             //console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
             //console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
 
-            console.log(`Game 1 hand`, this.game1.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
-            console.log(`Game 2 hand`, this.game2.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
-            console.log(`Game S hand`, this.gameModel.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
+            console.error(`Game 1 hand`, this.game1.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
+            console.error(`Game 2 hand`, this.game2.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
+            console.error(`Game S hand`, this.gameModel.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
 
             this.printGameEvents(this.game1, 4);
             this.printGameEvents(this.game2, 4);
@@ -186,9 +186,9 @@ export class GameManager {
         params
       );
 
-      console.log(this.gameModel.lastCardsPlayed);
-      console.log(this.game1.lastCardsPlayed);
-      console.log(this.game2.lastCardsPlayed);
+      console.error(this.gameModel.lastCardsPlayed);
+      console.error(this.game1.lastCardsPlayed);
+      console.error(this.game2.lastCardsPlayed);
 
       console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
       console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => this.summerizeUnit(unit)));
