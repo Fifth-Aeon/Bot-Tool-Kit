@@ -35,6 +35,7 @@ export class TournamentManager {
                     console.warn(`Worker ${workerHandle.worker.id}:${workerHandle.worker.process.pid} timed out. Killing it.`)
                     workerHandle.worker.kill();
                     this.gameQueue.push(workerHandle.game);
+                    this.workers.delete(workerHandle.worker.process.pid);
                 }
             }
             this.timeLimit
@@ -69,7 +70,8 @@ export class TournamentManager {
             }
         });
         worker.on('disconnect', () => {
-            this.workers.delete(worker.process.pid);
+            if (this.workers.has(worker.process.pid))
+                this.workers.delete(worker.process.pid);
             console.warn(`Worker ${worker.id}:${worker.process.pid} disconnected. Spawning a new worker.`);
             this.createWorker();
         });
@@ -83,11 +85,11 @@ export class TournamentManager {
     private writeResult(result: number, workerId: number) {
         this.gameCount--;
         this.results.push(result);
+        console.warn(`Game completed ${this.gameCount} remain.`);
         if (this.gameCount <= 0) {
             this.onTournamentEnd();
         } else {
             let worker = this.workers.get(workerId);
-            //console.log(`Game completed ${this.gameCount} remain.`);
             worker.busy = false;
             worker.runtime = 0;
             this.startGame();
