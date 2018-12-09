@@ -109,7 +109,6 @@ export class GameManager {
           try {
             ai.handleGameEvent(event);
           } catch (error) {
-            this.saveSeed(this.seed);
 
             console.error('Failure while sending events to A.Is');
             console.error(error);
@@ -241,9 +240,11 @@ export class GameManager {
   }
 
  
-  private loadOrGenerateSeed() {
-    if (fs.existsSync('seedfile')) {
-      return parseInt(fs.readFileSync('seedfile').toString());
+  private loadOrGenerateSeed(): number {
+    if (this.exitOnFailure && fs.existsSync('seedfile')) {
+      let savedSeed = parseInt(fs.readFileSync('seedfile').toString());
+      console.warn('Using saved seed', savedSeed);
+      return savedSeed;
     }
     return new Date().getTime();
   }

@@ -58,8 +58,14 @@ function runBalancer(manager: TournamentManager) {
 
     let growthCostSearch: ComprehensiveSearch = {
         kind: BalanceMethods.ComprehensiveSearch,
-        searchParameters: [{ id: 'energy', min: 0, max: 10 }, { id: 'growth', min: 0, max: 6 }],
-        trialsPerConfiguraiton: 1
+        searchParameters: [{ id: 'energy', min: 8, max: 10 }, { id: 'growth', min: 0, max: 6 }],
+        trialsPerConfiguraiton: 10
+    }
+
+    let energyCostSearch: ComprehensiveSearch = {
+        kind: BalanceMethods.ComprehensiveSearch,
+        searchParameters: [{ id: 'energy', min: 8, max: 10 }],
+        trialsPerConfiguraiton: 10
     }
 
     let fullSearch: ComprehensiveSearch = {
