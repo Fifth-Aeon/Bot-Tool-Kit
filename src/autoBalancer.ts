@@ -4,6 +4,8 @@ import { Card, CardType } from "./game_model/card";
 import { CardData, cardList } from "./game_model/cards/cardList";
 import { DeckList } from "./game_model/deckList";
 import { property, set, reduce, flatten, map } from 'lodash';
+import * as fs from "fs";
+
 
 
 interface ModifiableElement {
@@ -17,7 +19,7 @@ export enum BalanceMethods {
     ComprehensiveSearch, HillDescent
 }
 
-export type BalanceMethodConfiguration = ComprehensiveSearch | HillDescent
+export type BalanceMethodConfiguration = ComprehensiveSearchConfig | HillDescentConfig
 
 export interface Modifiable {
     id: string,
@@ -25,17 +27,17 @@ export interface Modifiable {
     max?: number
 }
 
-export interface ComprehensiveSearch {
+export interface ComprehensiveSearchConfig {
     readonly kind: BalanceMethods.ComprehensiveSearch;
-    trialsPerConfiguraiton: number;
-    searchParameters: Modifiable[];
+    readonly trialsPerConfiguraiton: number;
+    readonly searchParameters: Modifiable[];
 }
 
-export interface HillDescent {
+export interface HillDescentConfig {
     readonly kind: BalanceMethods.HillDescent;
-    trialsPerConfiguraiton: number;
-    threshold: number;
-    maxTrials: number;
+    readonly trialsPerConfiguraiton: number;
+    readonly threshold: number;
+    readonly maxTrials: number;
 }
 
 export class AutoBalancer {
@@ -43,7 +45,8 @@ export class AutoBalancer {
     private modifiableElemnts: ModifiableElement[];
     private cardData: CardData;
     private goal: Card;
-    private decks: DeckList[]
+    private decks: DeckList[];
+    private outputFile: string;
 
     constructor(private manager: TournamentManager) { }
 
@@ -58,30 +61,28 @@ export class AutoBalancer {
         return clones;
     }
 
-    public async balanceCard(cardData: CardData, goal: Card, decks: DeckList[], parameters: BalanceMethodConfiguration): Promise<CardData> {
-        let runs = 0;
+    public async balanceCard(outputFile: string, cardData: CardData, goal: Card, decks: DeckList[], parameters: BalanceMethodConfiguration): Promise<CardData> {
+        this.outputFile = outputFile;
         this.modifiableElemnts = this.getModifiableElements(cardData);
         this.cardData = cardData;
         this.goal = goal;
         this.decks = decks;
 
         if (parameters.kind === BalanceMethods.ComprehensiveSearch) {
-            return this.ComprehensiveSearch(parameters);
+            return this.comprehensiveSearch(parameters);
         } else if (parameters.kind === BalanceMethods.HillDescent) {
             return this.hillDescentMethod(parameters.threshold, parameters.trialsPerConfiguraiton);
         }
-
-
     }
 
-    private async ComprehensiveSearch(parameters: ComprehensiveSearch): Promise<CardData> {
+    private async comprehensiveSearch(parameters: ComprehensiveSearchConfig): Promise<CardData> {
         let toSearch = this.modifiableElemnts.filter(el => {
             for (let param of parameters.searchParameters) {
-                if (el.id.includes(param.id))  {
+                if (el.id.includes(param.id)) {
                     if (param.max)
                         el.max = param.max;
                     if (param.min)
-                        el.min = param.min;   
+                        el.min = param.min;
                     return true;
                 }
             }
@@ -89,26 +90,34 @@ export class AutoBalancer {
         });
         let combinations = this.cartesianProductOf(...toSearch.map(this.makeOptionsList)) as number[][];
 
-        let scores = [];
         let best = combinations[0];
         let bestScore = Infinity;
+        let outputData = ['Energy Winrate Score'];
 
         for (let combination of combinations) {
             this.applyConfigurationToCard(toSearch, combination);
-            let winRate = await this.runTournament(parameters.trialsPerConfiguraiton);
-            let score = Math.abs(winRate - 0.5);
+            let results = await this.runTournament(parameters.trialsPerConfiguraiton);
+
+            let score = await this.fullInjectionScore(results);
 
             if (score < bestScore) {
                 bestScore = score;
                 best = combination;
             }
-            console.log(`${combination} ->  ${score}`);
 
-            scores.push(score);
+            outputData.push(`${combination} ${results.rate} ${score}`);
+
+            console.log(`${combination} -> Won: (${results.wins} / ${results.games}) WR: ${results.rate * 100}% Score: ${score}`);
         }
-        
+
+        fs.writeFileSync(this.outputFile, outputData.join('\n'));
+
         this.applyConfigurationToCard(toSearch, best);
         return this.cardData;
+    }
+
+    private async fullInjectionScore(results: any) {
+        return Math.abs(results.rate - 0.5);
     }
 
     private applyConfigurationToCard(elements: ModifiableElement[], values: number[]) {
@@ -140,8 +149,8 @@ export class AutoBalancer {
         let runs = 0;
 
         while (true) {
-            let winRate = await this.runTournament(games);
-            let delta = goalWinRate - winRate;
+            let result = await this.runTournament(games);
+            let delta = goalWinRate - result.rate;
 
             if (this.shouldTerminate(runs, delta, threshold)) {
                 return this.cardData;
@@ -183,7 +192,7 @@ export class AutoBalancer {
         return Math.abs(delta) <= threshold;
     }
 
-    private async runTournament( games: number) {
+    private async runTournament(games: number) {
         // Register the card with the card list so we can construct instances of it
         cardList.addFactory(cardList.buildCardFactory(this.cardData));
         this.manager.registerCard(this.cardData);
@@ -197,7 +206,11 @@ export class AutoBalancer {
         let winRate = outcomes[0] / (outcomes[0] + outcomes[1]);
         console.log(`Tournament round complete. Target card won ${outcomes[0]} out of ${outcomes[0] + outcomes[1]} games (${winRate * 100}%).`);
 
-        return winRate;
+        return {
+            wins: outcomes[0],
+            games: outcomes[0] + outcomes[1],
+            rate: winRate
+        }
     }
 
     private buffCard(card: CardData): CardData {
