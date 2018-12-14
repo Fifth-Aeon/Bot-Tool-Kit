@@ -2,7 +2,6 @@ import * as fs from "fs";
 import { AIConstructor } from "game_model/ai/aiList";
 import { DeckList, SavedDeck } from "game_model/deckList";
 import { Unit } from "game_model/unit";
-import { sample } from "lodash";
 import { AI } from "./game_model/ai/ai";
 import { DefaultAI } from "./game_model/ai/defaultAi";
 import { Animator } from "./game_model/animator";
@@ -82,23 +81,6 @@ export class GameManager {
 
   }
 
-  private checkGameSyncronization(game1: Game, game2: Game) {
-    for (let i = 0; i < 2; i++) {
-      let player1 = game1.getPlayer(i);
-      let hand1 = player1.getHand();
-
-      let player2 = game2.getPlayer(i);
-      let hand2 = player2.getHand();
-
-      let playerS = this.gameModel.getPlayer(i);
-      let handS = playerS.getHand();
-
-      if (hand1.length != hand2.length) {
-        throw new Error(`Sync error hands of player ${i} are not equally long ${hand1.length} in game1 vs ${hand2.length} in game2 vs ${handS.length} in serve`);
-      }
-    }
-
-  }
 
   // Action communication -------------------------------------
   private sendEventsToLocalPlayers(events: GameSyncEvent[]) {
