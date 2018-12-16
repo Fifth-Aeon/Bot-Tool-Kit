@@ -17,6 +17,9 @@ interface WorkerHandle {
 
 
 export class TournamentManager {
+    static instance: TournamentManager;
+
+
     private gameQueue: GameInfo[] = [];
     private workers: Map<number, WorkerHandle> = new Map();
     private newCards: Array<CardData> = [];
@@ -25,7 +28,16 @@ export class TournamentManager {
     private gameCount: number = 0;
     private results = [];
 
+    public static getInstance(timeLimit: number = 8500) {
+        if (!this.instance) {
+            this.instance = new TournamentManager(timeLimit);
+        }
+        return this.instance;
+    }
+
     constructor(private timeLimit: number) {
+        if (TournamentManager.instance !== undefined)
+            throw new Error('May only have one tournament manager singleton');
         const checkTimeoutInterval = 500;
         setInterval(() => {
             for (let workerHandle of Array.from(this.workers.values())) {

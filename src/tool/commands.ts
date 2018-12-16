@@ -9,7 +9,6 @@ import { TournamentManager } from "./tournamentManager";
 
 const packager = new BotPackager();
 const manager = new GameManager();
-const tourney = new TournamentManager(5000);
 
 export const packageBot = (filename: string) => {
     packager.buildBot(filename);
@@ -55,6 +54,7 @@ export const runGame = (deckNames: string[], ais: AIConstructor[]) => {
     manager.startAIGame(ais[0], ais[1], decks[0], decks[1]);
 }
 
-export const runTournament = (ais: AIConstructor[],deckNames: string[], mirrorMode: boolean, gamesPerMatchup: number) => {
-    tourney.runRoundRobinTournament(ais, loadDecks(deckNames), mirrorMode, gamesPerMatchup);
+export const runTournament = async (ais: AIConstructor[],deckNames: string[], mirrorMode: boolean, gamesPerMatchup: number) => {
+    await TournamentManager.getInstance().runRoundRobinTournament(ais, loadDecks(deckNames), mirrorMode, gamesPerMatchup);
+    process.exit(0);
 }

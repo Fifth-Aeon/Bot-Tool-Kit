@@ -16,7 +16,7 @@ process.on('unhandledRejection', up => { throw up });
 
 if (cluster.isMaster) {
     const numWorkers = require('os').cpus().length;
-    const manager = new TournamentManager(8500);
+    const manager = TournamentManager.getInstance();
 
     console.warn('create', numWorkers, 'workers');
     for (let i = 0; i < numWorkers; i++) {
