@@ -1,14 +1,16 @@
 import * as fs from "fs";
-import { AIConstructor } from "game_model/ai/aiList";
-import { DeckList, SavedDeck } from "game_model/deckList";
-import { Unit } from "game_model/unit";
+import { AIConstructor } from "./game_model/ai/aiList";
+import { DeckList, SavedDeck } from "./game_model/deckList";
+import { Unit } from "./game_model/unit";
 import { AI } from "./game_model/ai/ai";
 import { DefaultAI } from "./game_model/ai/defaultAi";
 import { Animator } from "./game_model/animator";
 import { ClientGame } from "./game_model/clientGame";
-import { Game, GameActionType, GameSyncEvent, SyncEventType } from "./game_model/game";
+import { Game } from "./game_model/game";
 import { standardFormat } from "./game_model/gameFormat";
 import { ServerGame } from "./game_model/serverGame";
+import { GameSyncEvent, SyncEventType } from "./game_model/events/syncEvent";
+import { GameActionType, GameAction } from "./game_model/events/gameAction";
 
 
 export interface GameInfo {
@@ -63,19 +65,13 @@ export class GameManager {
     }
   }
 
-  private printEvents(events: GameSyncEvent[]) {
-    for (let event of events) {
-      console.error(SyncEventType[event.type], event.params);
-    }
-  }
-
   private printGameEvents(game: Game, num: number) {
     let events = this.game1.getPastEvents().slice(this.game1.getPastEvents().length - num);
 
     console.error();
     console.error(`Last ${num} ${game.getName()} events`);
     for (let event of events) {
-      console.error(SyncEventType[event.type], event.params);
+      console.error(SyncEventType[event.type], event);
     }
     console.error();
 
@@ -128,11 +124,11 @@ export class GameManager {
   }
 
   private watchGame(event: GameSyncEvent) {
-    if (event.type == SyncEventType.Ended) {
-      this.endGame(event.params.winner);
+    if (event.type === SyncEventType.Ended) {
+      this.endGame(event.winner);
     } else if (this.annoucmentsOn && event.type == SyncEventType.TurnStart && this.gameModel) {
       console.log(
-        `Turn ${event.params.turnNum} Life Totals ${this.gameModel
+        `Turn ${event.turnNum} Life Totals ${this.gameModel
           .getPlayer(0)
           .getLife()} to ${this.gameModel.getPlayer(1).getLife()}.`
       );
@@ -152,28 +148,20 @@ export class GameManager {
       [card.getId(), card.getName(), card.isPlayable(game)]));
   }
 
-  private sendGameAction(
-    type: GameActionType,
-    params: any,
-    playerNumber: number
-  ) {
+  private sendGameAction(action: GameAction) {
     //console.log(playerNumber, 'took', GameActionType[type], 'with', params);
-    let res = this.gameModel.handleAction({
-      type: type,
-      player: playerNumber,
-      params: params
-    });
+    let res = this.gameModel.handleAction(action);
 
     //console.log(`AI ${playerNumber} sent action ${GameActionType[type]} with params`, params);
     if (res === null) {
 
       console.error(
         "An action sent to game model by",
-        playerNumber,
+        action.player,
         "failed. It was",
-        GameActionType[type],
+        GameActionType[action.type],
         "with",
-        params
+        action
       );
 
       console.error(this.gameModel.lastCardsPlayed);
@@ -253,12 +241,12 @@ export class GameManager {
     this.gameModel = new ServerGame("server", standardFormat, [deck1, deck2]);
     this.game1 = new ClientGame(
       "A.I - 1",
-      (type, params) => this.sendGameAction(type, params, 0),
+      (_, action) => this.sendGameAction(action),
       animator
     );
     this.game2 = new ClientGame(
       "A.I - 2",
-      (type, params) => this.sendGameAction(type, params, 1),
+      (_, action) => this.sendGameAction(action),
       animator
     );
 

@@ -152,7 +152,6 @@ function runBalancer(manager: TournamentManager) {
     balancer.balanceCard('results/drawSpell.dat', cardToBalance, decapitate(), allDecks, energyCostSearch).then(balanced => {
         console.log('Result ----------------------');
         console.log(balanced);
-        console.log("\007");
         process.exit(0);
     });
 }

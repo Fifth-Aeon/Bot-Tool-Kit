@@ -52,7 +52,7 @@ export class TournamentManager {
         worker.on('message', (msg: WorkerToMasterMessage) => {
             if (msg.type === WorkerToMasterMessageType.GameResult) {
                 if (msg.error) {
-                    console.warn('got error esult, requing');
+                    console.warn('got error result, requing');
                     this.gameQueue.push(msg.game);
                 } else
                     this.writeResult(msg.winner, msg.id);
