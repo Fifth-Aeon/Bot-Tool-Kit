@@ -3,9 +3,9 @@ import * as fs from "fs";
 import * as inquirer from "inquirer";
 import * as path from "path";
 import { createBot, packageBot, runGame, runTournament } from "./commands";
-import { AIConstructor, aiList } from "./game_model/ai/aiList";
-import { allDecks } from "./game_model/scenarios/decks";
-import { DefaultAI } from "./game_model/ai/defaultAi";
+import { AIConstructor, aiList } from "../game_model/ai/aiList";
+import { allDecks } from "../game_model/scenarios/decks";
+import { DefaultAI } from "../game_model/ai/defaultAi";
 
 
 const chalk = require("chalk");

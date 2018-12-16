@@ -1,16 +1,16 @@
 import * as fs from "fs";
-import { AIConstructor } from "./game_model/ai/aiList";
-import { DeckList, SavedDeck } from "./game_model/deckList";
-import { Unit } from "./game_model/unit";
-import { AI } from "./game_model/ai/ai";
-import { DefaultAI } from "./game_model/ai/defaultAi";
-import { Animator } from "./game_model/animator";
-import { ClientGame } from "./game_model/clientGame";
-import { Game } from "./game_model/game";
-import { standardFormat } from "./game_model/gameFormat";
-import { ServerGame } from "./game_model/serverGame";
-import { GameSyncEvent, SyncEventType } from "./game_model/events/syncEvent";
-import { GameActionType, GameAction } from "./game_model/events/gameAction";
+import { AIConstructor } from "../game_model/ai/aiList";
+import { DeckList, SavedDeck } from "../game_model/deckList";
+import { Unit } from "../game_model/unit";
+import { AI } from "../game_model/ai/ai";
+import { DefaultAI } from "../game_model/ai/defaultAi";
+import { Animator } from "../game_model/animator";
+import { ClientGame } from "../game_model/clientGame";
+import { Game } from "../game_model/game";
+import { standardFormat } from "../game_model/gameFormat";
+import { ServerGame } from "../game_model/serverGame";
+import { GameSyncEvent, SyncEventType } from "../game_model/events/syncEvent";
+import { GameActionType, GameAction } from "../game_model/events/gameAction";
 
 
 export interface GameInfo {

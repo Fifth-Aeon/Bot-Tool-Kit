@@ -1,10 +1,10 @@
 import * as fs from "fs";
-import { AIConstructor } from "./game_model/ai/aiList";
+import { AIConstructor } from "../game_model/ai/aiList";
 import { camelCase, capitalize } from "lodash";
 import { BotPackager } from "./botPackager";
 import { GameManager } from "./gameManager";
-import { DefaultAI } from "./game_model/ai/defaultAi";
-import { deckMap } from "./game_model/scenarios/decks";
+import { DefaultAI } from "../game_model/ai/defaultAi";
+import { deckMap } from "../game_model/scenarios/decks";
 import { TournamentManager } from "./tournamentManager";
 
 const packager = new BotPackager();

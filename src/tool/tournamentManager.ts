@@ -1,10 +1,10 @@
 import * as cluster from "cluster";
 import { sample } from "lodash";
 import { GameManager, GameInfo } from "./gameManager";
-import { AIConstructor, aiList } from "./game_model/ai/aiList";
-import { CardData, cardList } from "./game_model/cards/cardList";
-import { DeckList, SavedDeck } from "./game_model/deckList";
-import { standardFormat } from "./game_model/gameFormat";
+import { AIConstructor, aiList } from "../game_model/ai/aiList";
+import { CardData, cardList } from "../game_model/cards/cardList";
+import { DeckList, SavedDeck } from "../game_model/deckList";
+import { standardFormat } from "../game_model/gameFormat";
 import { AddCardMessage, MasterToWorkerMessage, MasterToWorkerMessageType, StartGameMesage } from "./masterToWorkerMessages";
 import { GameResultMessage, ReadyMessage, WorkerToMasterMessage, WorkerToMasterMessageType } from "./workerToMasterMessages";
 

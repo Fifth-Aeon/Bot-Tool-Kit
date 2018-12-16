@@ -1,6 +1,6 @@
 import * as commander from "commander";
 import { runTournament, runGame, createBot, packageBot } from "./commands";
-import { aiList } from "./game_model/ai/aiList";
+import { aiList } from "../game_model/ai/aiList";
 
 export function readArgs() {
     commander.command('game <bot1> <deck1> <bot2> <deck2>')

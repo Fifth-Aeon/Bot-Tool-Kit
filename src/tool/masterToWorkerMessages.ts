@@ -1,5 +1,5 @@
 import { GameInfo } from "./gameManager";
-import { CardData } from "./game_model/cards/cardList";
+import { CardData } from "../game_model/cards/cardList";
 
 export enum MasterToWorkerMessageType {
     StartGame, AddCard, Timeout
