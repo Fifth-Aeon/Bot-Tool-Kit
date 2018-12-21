@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "balance": "ts-node src/testBalancer.ts",
+    "balance": "ts-node src/tool/testBalancer.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "William Ritson",
