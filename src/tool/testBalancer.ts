@@ -29,7 +29,7 @@ if (cluster.isMaster) {
 }
 
 
-function runBalancer(manager: TournamentManager) {
+async function runBalancer(manager: TournamentManager) {
     const balancer = new AutoBalancer(manager);
 
     let plainUnit: UnitData = {
@@ -63,7 +63,7 @@ function runBalancer(manager: TournamentManager) {
         "imageUrl": "person.png",
         "cost": { "energy": 0, "synthesis": 0, "growth": 0, "decay": 0, "renewal": 0 },
         "mechanics": [{
-            "id": DrawCard.getId(), 
+            "id": DrawCard.getId(),
             "parameters": ["3"],
             "trigger": { "id": "Play" }
         }],
@@ -88,7 +88,7 @@ function runBalancer(manager: TournamentManager) {
     let tenTenUnit: UnitData = {
         cardType: CardType.Unit,
         type: UnitType.Human,
-        cost: { energy: 1 , growth: 6},
+        cost: { energy: 1, growth: 6 },
         life: 10,
         damage: 10,
         id: 'test-card',
@@ -101,20 +101,20 @@ function runBalancer(manager: TournamentManager) {
     let fiveFiveFlyer: UnitData = {
         cardType: CardType.Unit,
         type: UnitType.Human,
-        cost: { energy: 1},
+        cost: { energy: 1 },
         life: 5,
         damage: 5,
         id: 'test-card',
         name: 'Test Card',
         imageUrl: '',
         targeter: { id: 'Untargeted', optional: false },
-        mechanics: [{id: Flying.getId(), parameters: []}]
+        mechanics: [{ id: Flying.getId(), parameters: [] }]
     };
 
     let threeThreeUnit: UnitData = {
         cardType: CardType.Unit,
         type: UnitType.Human,
-        cost: { energy: 1},
+        cost: { energy: 1 },
         life: 3,
         damage: 3,
         id: 'test-card',
@@ -133,7 +133,7 @@ function runBalancer(manager: TournamentManager) {
     let energyCostSearch: ComprehensiveSearchConfig = {
         kind: BalanceMethods.ComprehensiveSearch,
         searchParameters: [{ id: 'energy', min: 0, max: 10 }],
-        trialsPerConfiguraiton: 10
+        trialsPerConfiguraiton: 100
     }
 
     let fullSearch: ComprehensiveSearchConfig = {
@@ -147,11 +147,20 @@ function runBalancer(manager: TournamentManager) {
         trialsPerConfiguraiton: 1
     }
 
-    const cardToBalance = drawSpell;
-    console.log('Balancing card', cardToBalance);
-    balancer.balanceCard('results/drawSpell.dat', cardToBalance, decapitate(), allDecks, growthCostSearch).then(balanced => {
-        console.log('Result ----------------------');
-        console.log(balanced);
-        process.exit(0);
-    });
+
+    const tests = [
+        { out: 'drawSpell', card: drawSpell, algo: energyCostSearch },
+        { out: 'bigUnit', card: tenTenUnit, algo: energyCostSearch },
+        { out: 'damageSpell', card: damageSpell, algo: energyCostSearch },
+        { out: 'drawSpell', card: drawSpell, algo: energyCostSearch },
+        { out: 'flyer', card: fiveFiveFlyer, algo: energyCostSearch },
+        { out: 'mirror', card: uncostedDecapitate, algo: energyCostSearch },
+        { out: 'smallUnit', card: threeThreeUnit, algo: energyCostSearch },
+    ]
+
+    for (let test of tests) {
+        const cardToBalance = test.card;
+        await balancer.balanceCard(`results/${test.out}.dat`, cardToBalance, decapitate(), allDecks, test.algo);
+    }
+    process.exit(0);
 }
