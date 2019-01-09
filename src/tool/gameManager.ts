@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import { AIConstructor } from "../game_model/ai/aiList";
 import { DeckList, SavedDeck } from "../game_model/deckList";
-import { Unit } from "../game_model/unit";
+import { Unit } from "../game_model/card-types/unit";
 import { AI } from "../game_model/ai/ai";
 import { DefaultAI } from "../game_model/ai/defaultAi";
 import { Animator } from "../game_model/animator";

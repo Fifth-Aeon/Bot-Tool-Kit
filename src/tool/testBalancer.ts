@@ -1,9 +1,9 @@
 import { AutoBalancer, ComprehensiveSearchConfig, BalanceMethods } from "./autoBalancer";
-import { CardType } from "../game_model/card";
+import { CardType } from "../game_model/card-types/card";
 import { UnitData, SpellData } from "../game_model/cards/cardList";
 import { decapitate } from "../game_model/cards/decayCards";
 import { allDecks } from "../game_model/scenarios/decks";
-import { UnitType } from "../game_model/unit";
+import { UnitType } from "../game_model/card-types/unit";
 import * as cluster from "cluster";
 import { TournamentManager, TournamentWorker } from "./tournamentManager";
 import { DealDamage } from "../game_model/cards/mechanics/dealDamage";
@@ -127,7 +127,7 @@ function runBalancer(manager: TournamentManager) {
     let growthCostSearch: ComprehensiveSearchConfig = {
         kind: BalanceMethods.ComprehensiveSearch,
         searchParameters: [{ id: 'energy', min: 8, max: 10 }, { id: 'growth', min: 0, max: 6 }],
-        trialsPerConfiguraiton: 2
+        trialsPerConfiguraiton: 1
     }
 
     let energyCostSearch: ComprehensiveSearchConfig = {
@@ -149,7 +149,7 @@ function runBalancer(manager: TournamentManager) {
 
     const cardToBalance = drawSpell;
     console.log('Balancing card', cardToBalance);
-    balancer.balanceCard('results/drawSpell.dat', cardToBalance, decapitate(), allDecks, energyCostSearch).then(balanced => {
+    balancer.balanceCard('results/drawSpell.dat', cardToBalance, decapitate(), allDecks, growthCostSearch).then(balanced => {
         console.log('Result ----------------------');
         console.log(balanced);
         process.exit(0);

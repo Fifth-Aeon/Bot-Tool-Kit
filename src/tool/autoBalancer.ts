@@ -1,10 +1,10 @@
-import { TournamentManager } from "tool/tournamentManager";
+import { TournamentManager } from "./tournamentManager";
 import { DefaultAI } from "../game_model/ai/defaultAi";
-import { Card, CardType } from "../game_model/card";
 import { CardData, cardList } from "../game_model/cards/cardList";
 import { DeckList } from "../game_model/deckList";
 import { property, set, reduce, flatten, map } from 'lodash';
 import * as fs from "fs";
+import { Card, CardType } from "../game_model/card-types/card";
 
 
 
