@@ -101,7 +101,7 @@ async function runBalancer(manager: TournamentManager) {
     let fiveFiveFlyer: UnitData = {
         cardType: CardType.Unit,
         type: UnitType.Human,
-        cost: { energy: 1 },
+        cost: { energy: 7 },
         life: 5,
         damage: 5,
         id: 'test-card',
@@ -133,7 +133,13 @@ async function runBalancer(manager: TournamentManager) {
     let energyCostSearch: ComprehensiveSearchConfig = {
         kind: BalanceMethods.ComprehensiveSearch,
         searchParameters: [{ id: 'energy', min: 0, max: 10 }],
-        trialsPerConfiguraiton: 100
+        trialsPerConfiguraiton: 10
+    }
+
+    let attackPowerSearch: ComprehensiveSearchConfig = {
+        kind: BalanceMethods.ComprehensiveSearch,
+        searchParameters: [{ id: 'damage', min: 0, max: 10 }],
+        trialsPerConfiguraiton: 10
     }
 
     let fullSearch: ComprehensiveSearchConfig = {
@@ -149,6 +155,8 @@ async function runBalancer(manager: TournamentManager) {
 
 
     const tests = [
+        {out : 'flyerAttack', card: fiveFiveFlyer, algo: attackPowerSearch}
+        /*
         { out: 'drawSpell', card: drawSpell, algo: energyCostSearch },
         { out: 'bigUnit', card: tenTenUnit, algo: energyCostSearch },
         { out: 'damageSpell', card: damageSpell, algo: energyCostSearch },
@@ -156,6 +164,7 @@ async function runBalancer(manager: TournamentManager) {
         { out: 'flyer', card: fiveFiveFlyer, algo: energyCostSearch },
         { out: 'mirror', card: uncostedDecapitate, algo: energyCostSearch },
         { out: 'smallUnit', card: threeThreeUnit, algo: energyCostSearch },
+        */
     ]
 
     for (let test of tests) {
