@@ -146,13 +146,13 @@ async function runBalancer(manager: TournamentManager) {
     let energyCostSearch: ComprehensiveSearchConfig = {
         kind: BalanceMethods.ComprehensiveSearch,
         searchParameters: [{ id: 'energy', min: 0, max: 10 }],
-        trialsPerConfiguraiton: 10
+        trialsPerConfiguraiton: 30
     }
 
     let attackPowerSearch: ComprehensiveSearchConfig = {
         kind: BalanceMethods.ComprehensiveSearch,
         searchParameters: [{ id: 'damage', min: 0, max: 10 }],
-        trialsPerConfiguraiton: 10
+        trialsPerConfiguraiton: 30
     }
 
     let fullSearch: ComprehensiveSearchConfig = {
@@ -168,19 +168,17 @@ async function runBalancer(manager: TournamentManager) {
 
 
     const tests = [
-        //{out : 'flyerAttack', card: fiveFiveFlyer, algo: attackPowerSearch},
+        {out : 'flyerAttack', card: fiveFiveFlyer, algo: attackPowerSearch},
         {out : 'bigUnitAttack', card: tenTenUnit, algo: attackPowerSearch},
         {out : 'smallUnitAttack', card: threeThreeUnit, algo: attackPowerSearch},
         {out : 'relentlessUnitAttack', card: relentlessUnitAttack, algo: attackPowerSearch},
-        /*
         { out: 'drawSpell', card: drawSpell, algo: energyCostSearch },
         { out: 'bigUnit', card: tenTenUnit, algo: energyCostSearch },
         { out: 'damageSpell', card: damageSpell, algo: energyCostSearch },
         { out: 'drawSpell', card: drawSpell, algo: energyCostSearch },
         { out: 'flyer', card: fiveFiveFlyer, algo: energyCostSearch },
         { out: 'mirror', card: uncostedDecapitate, algo: energyCostSearch },
-        { out: 'smallUnit', card: threeThreeUnit, algo: energyCostSearch },
-        */
+        { out: 'smallUnit', card: threeThreeUnit, algo: energyCostSearch }
     ]
 
     for (let test of tests) {
