@@ -8,7 +8,7 @@ import * as cluster from "cluster";
 import { TournamentManager, TournamentWorker } from "./tournamentManager";
 import { DealDamage } from "../game_model/cards/mechanics/dealDamage";
 import { SingleUnit } from "../game_model/cards/targeters/basicTargeter";
-import { Flying } from "../game_model/cards/mechanics/skills";
+import { Flying, Relentless } from "../game_model/cards/mechanics/skills";
 import { DrawCard } from "../game_model/cards/mechanics/draw";
 
 // Unhandled promise rejections should throw exceptions
@@ -88,7 +88,7 @@ async function runBalancer(manager: TournamentManager) {
     let tenTenUnit: UnitData = {
         cardType: CardType.Unit,
         type: UnitType.Human,
-        cost: { energy: 1, growth: 6 },
+        cost: { energy: 7 },
         life: 10,
         damage: 10,
         id: 'test-card',
@@ -114,7 +114,7 @@ async function runBalancer(manager: TournamentManager) {
     let threeThreeUnit: UnitData = {
         cardType: CardType.Unit,
         type: UnitType.Human,
-        cost: { energy: 1 },
+        cost: { energy: 7 },
         life: 3,
         damage: 3,
         id: 'test-card',
@@ -122,6 +122,19 @@ async function runBalancer(manager: TournamentManager) {
         imageUrl: '',
         targeter: { id: 'Untargeted', optional: false },
         mechanics: []
+    };
+
+    let relentlessUnitAttack: UnitData = {
+        cardType: CardType.Unit,
+        type: UnitType.Human,
+        cost: { energy: 7 },
+        life: 5,
+        damage: 5,
+        id: 'test-card',
+        name: 'Test Card',
+        imageUrl: '',
+        targeter: { id: 'Untargeted', optional: false },
+        mechanics: [{ id: Relentless.getId(), parameters: [] }]
     };
 
     let growthCostSearch: ComprehensiveSearchConfig = {
@@ -155,7 +168,10 @@ async function runBalancer(manager: TournamentManager) {
 
 
     const tests = [
-        {out : 'flyerAttack', card: fiveFiveFlyer, algo: attackPowerSearch}
+        //{out : 'flyerAttack', card: fiveFiveFlyer, algo: attackPowerSearch},
+        {out : 'bigUnitAttack', card: tenTenUnit, algo: attackPowerSearch},
+        {out : 'smallUnitAttack', card: threeThreeUnit, algo: attackPowerSearch},
+        {out : 'relentlessUnitAttack', card: relentlessUnitAttack, algo: attackPowerSearch},
         /*
         { out: 'drawSpell', card: drawSpell, algo: energyCostSearch },
         { out: 'bigUnit', card: tenTenUnit, algo: energyCostSearch },
