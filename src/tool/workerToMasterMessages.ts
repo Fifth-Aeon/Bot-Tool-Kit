@@ -12,11 +12,23 @@ export interface ReadyMessage {
 }
 
 
-export interface GameResultMessage {
+interface GameResultMessageBase {
     readonly type: WorkerToMasterMessageType.GameResult;
     readonly id: number;
-
     readonly error: boolean;
-    readonly winner?: number;
-    readonly game?: GameInfo;
 }
+
+export type GameResultMessage = GameErrorMessage | GameSucessMessage;
+
+export interface GameErrorMessage extends GameResultMessageBase {
+    readonly error: true;
+    readonly game: GameInfo;
+}
+
+
+export interface GameSucessMessage extends GameResultMessageBase  {
+    readonly error: false;
+    readonly winner: number;
+}
+
+

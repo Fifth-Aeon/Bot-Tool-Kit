@@ -12,7 +12,7 @@ interface WorkerHandle {
     readonly worker: cluster.Worker;
     runtime: number;
     busy: boolean;
-    game: GameInfo;
+    game: GameInfo | undefined;
 }
 
 
@@ -26,7 +26,7 @@ export class TournamentManager {
 
     private onTournamentEnd: () => any = () => null;
     private gameCount: number = 0;
-    private results = [];
+    private results: number[] = [];
 
     public static getInstance(timeLimit: number = 8500) {
         if (!this.instance) {
@@ -46,7 +46,9 @@ export class TournamentManager {
                 if (workerHandle.runtime >= this.timeLimit) {
                     console.warn(`Worker ${workerHandle.worker.id}:${workerHandle.worker.process.pid} timed out. Killing it.`)
                     workerHandle.worker.kill();
-                    this.gameQueue.push(workerHandle.game);
+                    if (workerHandle.game) {
+                        this.gameQueue.push(workerHandle.game);
+                    }
                     this.workers.delete(workerHandle.worker.process.pid);
                 }
             }
@@ -63,7 +65,7 @@ export class TournamentManager {
         }
         worker.on('message', (msg: WorkerToMasterMessage) => {
             if (msg.type === WorkerToMasterMessageType.GameResult) {
-                if (msg.error) {
+                if (msg.error === true) {
                     console.warn('got error result, requing');
                     this.gameQueue.push(msg.game);
                 } else
@@ -74,7 +76,7 @@ export class TournamentManager {
                     busy: false,
                     runtime: 0,
                     worker: worker,
-                    game: null
+                    game: undefined
                 });
                 if (this.gameCount > 0) {
                     this.startGame();
@@ -102,6 +104,9 @@ export class TournamentManager {
             this.onTournamentEnd();
         } else {
             let worker = this.workers.get(workerId);
+            if (!worker) {
+                return;
+            }
             worker.busy = false;
             worker.runtime = 0;
             this.startGame();
@@ -120,14 +125,17 @@ export class TournamentManager {
     }
 
     private startGame() {
-        if (this.gameQueue.length === 0)
-            return;
+
 
         for (let workerHandle of Array.from(this.workers.values())) {
             if (!workerHandle.busy && workerHandle.worker.process.connected) {
+                const game = this.gameQueue.pop()
+                if (!game) {
+                    return;
+                }
                 let msg: StartGameMesage = {
                     type: MasterToWorkerMessageType.StartGame,
-                    game: this.gameQueue.pop()
+                    game: game
                 };
                 workerHandle.busy = true;
                 workerHandle.game = msg.game;
@@ -203,8 +211,8 @@ export class TournamentManager {
             for (let j = 0; j < ais.length; j++) {
                 if (i != j) {
                     for (let k = 0; k < numberOfGamesPerMatchup; k++) {
-                        let deck1 = sample(decks);
-                        let deck2 = mirrorMode ? deck1 : sample(decks);
+                        let deck1 = sample(decks) as DeckList;
+                        let deck2 = mirrorMode ? deck1 : sample(decks) as DeckList;
                         this.enqueueGame(ais[i], deck1, deck2, [0, 1]);
                     }
                 }
@@ -256,8 +264,8 @@ export class TournamentManager {
 
 export class TournamentWorker {
     private gameManger: GameManager;
-    private playerNumbers: number[];
-    private gameInfo: GameInfo;
+    private playerNumbers: number[] = [];
+    private gameInfo?: GameInfo;
 
     constructor() {
         this.gameManger = new GameManager();
@@ -267,6 +275,9 @@ export class TournamentWorker {
         process.on('message', (msg: MasterToWorkerMessage) => this.readMessage(msg));
 
         this.gameManger.onGameEnd = (winner) => {
+            if  (!process.send) {
+                throw new Error('No process.send avalible')
+            }
             if (isNaN(winner)) {
                 process.send({
                     type: WorkerToMasterMessageType.GameResult,
@@ -285,10 +296,13 @@ export class TournamentWorker {
 
         }
 
-        process.send({
-            type: WorkerToMasterMessageType.Ready,
-            id: process.pid
-        } as ReadyMessage);
+        if (process.send) {
+            process.send({
+                type: WorkerToMasterMessageType.Ready,
+                id: process.pid
+            } as ReadyMessage);
+        }
+        
     }
 
     private readMessage(message: MasterToWorkerMessage) {
@@ -309,7 +323,9 @@ export class TournamentWorker {
     private timeout() {
         this.gameManger.reset();
         console.warn(`Worker ${process.pid} timed out.`);
-        process.send(-1);
+        if (process.send) {
+            process.send(-1);
+        }
     }
 
     private addCardToPool(params: AddCardMessage) {

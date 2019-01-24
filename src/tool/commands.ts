@@ -32,8 +32,8 @@ export class ${typename} extends DefaultAI {
 
     fs.writeFileSync(`src/bots/${identifier}.ts`, code);
 
-    fs.appendFileSync('src/bots/importBots.ts', 
-`import { ${typename} } from './${identifier}';
+    fs.appendFileSync('src/bots/importBots.ts',
+        `import { ${typename} } from './${identifier}';
 aiList.registerConstructor(${typename});\n\n`);
 
 };
@@ -41,19 +41,25 @@ aiList.registerConstructor(${typename});\n\n`);
 const loadDecks = (deckNames: string[]) => {
     return deckNames.map(name => {
         const properName = camelCase(name);
-        if (deckMap.has(properName)) {
-            return deckMap.get(properName);
+        const deck = deckMap.get(properName);
+        if (!deck) {
+            throw new Error(`No deck named ${name} legal decks are ${Array.from(deckMap.keys())}.`);
         }
-        throw new Error(`No deck named ${name} legal decks are ${Array.from(deckMap.keys())}.`);
+        return deck;
     })
 }
 
 export const runGame = (deckNames: string[], ais: AIConstructor[]) => {
     const decks = loadDecks(deckNames);
-    manager.startAIGame(ais[0], ais[1], decks[0], decks[1]);
+    const deck1 = decks[0];
+    const deck2 = decks[1];
+    if (!deck1 || !deck2) {
+        throw new Error('No decks found with the given ids');
+    }
+    manager.startAIGame(ais[0], ais[1], deck1, deck2);
 }
 
-export const runTournament = async (ais: AIConstructor[],deckNames: string[], mirrorMode: boolean, gamesPerMatchup: number) => {
+export const runTournament = async (ais: AIConstructor[], deckNames: string[], mirrorMode: boolean, gamesPerMatchup: number) => {
     await TournamentManager.getInstance().runRoundRobinTournament(ais, loadDecks(deckNames), mirrorMode, gamesPerMatchup);
     process.exit(0);
 }

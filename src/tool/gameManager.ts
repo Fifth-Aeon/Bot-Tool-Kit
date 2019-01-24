@@ -22,14 +22,14 @@ export interface GameInfo {
 }
 
 export class GameManager {
-  private game1: ClientGame;
-  private game2: ClientGame;
-  private gameModel: ServerGame;
+  private game1: ClientGame | null = null;
+  private game2: ClientGame | null = null;
+  private gameModel: ServerGame | null = null;
 
 
   private ais: Array<AI> = [];
   private aiTick: any;
-  private seed: number;
+  private seed: number = 0;
 
   public onGameEnd: (winner: number) => any = () => null;
   public annoucmentsOn = true;
@@ -66,7 +66,7 @@ export class GameManager {
   }
 
   private printGameEvents(game: Game, num: number) {
-    let events = this.game1.getPastEvents().slice(this.game1.getPastEvents().length - num);
+    let events = game.getPastEvents().slice(game.getPastEvents().length - num);
 
     console.error();
     console.error(`Last ${num} ${game.getName()} events`);
@@ -93,6 +93,10 @@ export class GameManager {
             //console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
             //console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
 
+            if (!this.gameModel || !this.game1 || !this.game2) {
+              throw new Error('Gamee not initlized properly');
+            }
+
             console.error(`Game 1 hand`, this.game1.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
             console.error(`Game 2 hand`, this.game2.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
             console.error(`Game S hand`, this.gameModel.getPlayer(aiNum).getHand().map(card => [card.getName(), card.getId()]));
@@ -117,6 +121,9 @@ export class GameManager {
   }
 
   private checkPriorityChange(event: GameSyncEvent) {
+    if (!this.gameModel) {
+      throw new Error('Gamee not initlized properly');
+    }
     if (!this.gameModel.canTakeAction())
       return;
     if (event.type === SyncEventType.TurnStart || event.type === SyncEventType.PhaseChange || event.type === SyncEventType.ChoiceMade)
@@ -144,11 +151,14 @@ export class GameManager {
   }
 
   private printCards(game: Game) {
-    console.error(game.getName(), 'Hand 1', this.game1.getPlayer(0).getHand().map(card =>
+    console.error(game.getName(), 'Hand 1', game.getPlayer(0).getHand().map(card =>
       [card.getId(), card.getName(), card.isPlayable(game)]));
   }
 
   private sendGameAction(action: GameAction) {
+    if (!this.gameModel || !this.game1 || !this.game2) {
+      throw new Error('Gamee not initlized properly');
+    }
     //console.log(playerNumber, 'took', GameActionType[type], 'with', params);
     let res = this.gameModel.handleAction(action);
 

@@ -1,10 +1,11 @@
 import { TournamentManager } from "./tournamentManager";
 import { DefaultAI } from "../game_model/ai/defaultAi";
-import { CardData, cardList } from "../game_model/cards/cardList";
+import { CardData, cardList, defaultDataObj } from "../game_model/cards/cardList";
 import { DeckList } from "../game_model/deckList";
 import { property, set, reduce, flatten, map } from 'lodash';
 import * as fs from "fs";
 import { Card, CardType } from "../game_model/card-types/card";
+import { decapitate } from 'game_model/cards/decayCards';
 
 
 
@@ -42,11 +43,11 @@ export interface HillDescentConfig {
 
 export class AutoBalancer {
 
-    private modifiableElemnts: ModifiableElement[];
-    private cardData: CardData;
-    private goal: Card;
-    private decks: DeckList[];
-    private outputFile: string;
+    private modifiableElemnts: ModifiableElement[] = [];
+    private cardData: CardData = defaultDataObj;
+    private goal: Card = decapitate();
+    private decks: DeckList[] = [];
+    private outputFile: string = 'results/res';
 
     constructor(private manager: TournamentManager) { }
 
@@ -73,6 +74,8 @@ export class AutoBalancer {
         } else if (parameters.kind === BalanceMethods.HillDescent) {
             return this.hillDescentMethod(parameters.threshold, parameters.trialsPerConfiguraiton);
         }
+
+        throw new Error('Balance method unrecognized');
     }
 
     private async comprehensiveSearch(parameters: ComprehensiveSearchConfig): Promise<CardData> {
@@ -136,7 +139,7 @@ export class AutoBalancer {
 
     private cartesianProductOf(...args: any[]) {
         return reduce(args, function (a, b) {
-            return flatten(map(a, function (x) {
+            return flatten(map(a, function (x : any[]) {
                 return map(b, function (y) {
                     return x.concat([y]);
                 });
