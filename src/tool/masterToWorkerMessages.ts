@@ -1,11 +1,16 @@
-import { GameInfo } from "./gameManager";
-import { CardData } from "../game_model/cards/cardList";
+import { GameInfo } from './gameManager';
+import { CardData } from '../game_model/cards/cardList';
 
 export enum MasterToWorkerMessageType {
-    StartGame, AddCard, Timeout
+    StartGame,
+    AddCard,
+    Timeout
 }
 
-export type MasterToWorkerMessage = StartGameMesage | AddCardMessage | TimeoutMessage;
+export type MasterToWorkerMessage =
+    | StartGameMesage
+    | AddCardMessage
+    | TimeoutMessage;
 
 export interface StartGameMesage {
     readonly type: MasterToWorkerMessageType.StartGame;

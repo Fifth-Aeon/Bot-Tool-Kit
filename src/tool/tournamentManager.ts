@@ -1,12 +1,22 @@
-import * as cluster from "cluster";
-import { sample } from "lodash";
-import { GameManager, GameInfo } from "./gameManager";
-import { AIConstructor, aiList } from "../game_model/ai/aiList";
-import { CardData, cardList } from "../game_model/cards/cardList";
-import { DeckList, SavedDeck } from "../game_model/deckList";
-import { standardFormat } from "../game_model/gameFormat";
-import { AddCardMessage, MasterToWorkerMessage, MasterToWorkerMessageType, StartGameMesage } from "./masterToWorkerMessages";
-import { GameResultMessage, ReadyMessage, WorkerToMasterMessage, WorkerToMasterMessageType } from "./workerToMasterMessages";
+import * as cluster from 'cluster';
+import { sample } from 'lodash';
+import { GameManager, GameInfo } from './gameManager';
+import { AIConstructor, aiList } from '../game_model/ai/aiList';
+import { CardData, cardList } from '../game_model/cards/cardList';
+import { DeckList, SavedDeck } from '../game_model/deckList';
+import { standardFormat } from '../game_model/gameFormat';
+import {
+    AddCardMessage,
+    MasterToWorkerMessage,
+    MasterToWorkerMessageType,
+    StartGameMesage
+} from './masterToWorkerMessages';
+import {
+    GameResultMessage,
+    ReadyMessage,
+    WorkerToMasterMessage,
+    WorkerToMasterMessageType
+} from './workerToMasterMessages';
 
 interface WorkerHandle {
     readonly worker: cluster.Worker;
@@ -15,17 +25,37 @@ interface WorkerHandle {
     game: GameInfo | undefined;
 }
 
-
 export class TournamentManager {
+    constructor(private timeLimit: number) {
+        if (TournamentManager.instance !== undefined) {
+            throw new Error('May only have one tournament manager singleton');
+        }
+        setInterval(() => {
+            for (const workerHandle of Array.from(this.workers.values())) {
+                if (workerHandle.busy) {
+                    workerHandle.runtime += this.timeLimit;
+                }
+                if (workerHandle.runtime >= this.timeLimit) {
+                    console.warn(
+                        `Worker ${workerHandle.worker.id}:${
+                            workerHandle.worker.process.pid
+                        } timed out. Killing it.`
+                    );
+                    workerHandle.worker.kill();
+                    if (workerHandle.game) {
+                        this.gameQueue.push(workerHandle.game);
+                    }
+                    this.workers.delete(workerHandle.worker.process.pid);
+                }
+            }
+        }, this.timeLimit);
+    }
     static instance: TournamentManager;
-
 
     private gameQueue: GameInfo[] = [];
     private workers: Map<number, WorkerHandle> = new Map();
     private newCards: Array<CardData> = [];
-
-    private onTournamentEnd: () => any = () => null;
-    private gameCount: number = 0;
+    private gameCount = 0;
     private results: number[] = [];
 
     public static getInstance(timeLimit: number = 8500) {
@@ -35,32 +65,13 @@ export class TournamentManager {
         return this.instance;
     }
 
-    constructor(private timeLimit: number) {
-        if (TournamentManager.instance !== undefined)
-            throw new Error('May only have one tournament manager singleton');
-        const checkTimeoutInterval = 500;
-        setInterval(() => {
-            for (let workerHandle of Array.from(this.workers.values())) {
-                if (workerHandle.busy)
-                    workerHandle.runtime += checkTimeoutInterval;
-                if (workerHandle.runtime >= this.timeLimit) {
-                    console.warn(`Worker ${workerHandle.worker.id}:${workerHandle.worker.process.pid} timed out. Killing it.`)
-                    workerHandle.worker.kill();
-                    if (workerHandle.game) {
-                        this.gameQueue.push(workerHandle.game);
-                    }
-                    this.workers.delete(workerHandle.worker.process.pid);
-                }
-            }
-            this.timeLimit
-        }, checkTimeoutInterval);
-    }
+    private onTournamentEnd: () => any = () => null;
 
     public async createWorker() {
-        let worker = cluster.fork();
+        const worker = cluster.fork();
         await new Promise(resolve => worker.on('online', () => resolve()));
 
-        for (let card of this.newCards) {
+        for (const card of this.newCards) {
             this.sendCardToWorker(card, worker);
         }
         worker.on('message', (msg: WorkerToMasterMessage) => {
@@ -68,8 +79,9 @@ export class TournamentManager {
                 if (msg.error === true) {
                     console.warn('got error result, requing');
                     this.gameQueue.push(msg.game);
-                } else
+                } else {
                     this.writeResult(msg.winner, msg.id);
+                }
             } else {
                 console.warn('worker', msg.id, 'is ready');
                 this.workers.set(msg.id, {
@@ -84,9 +96,14 @@ export class TournamentManager {
             }
         });
         worker.on('disconnect', () => {
-            if (this.workers.has(worker.process.pid))
+            if (this.workers.has(worker.process.pid)) {
                 this.workers.delete(worker.process.pid);
-            console.warn(`Worker ${worker.id}:${worker.process.pid} disconnected. Spawning a new worker.`);
+            }
+            console.warn(
+                `Worker ${worker.id}:${
+                    worker.process.pid
+                } disconnected. Spawning a new worker.`
+            );
             this.createWorker();
         });
     }
@@ -103,7 +120,7 @@ export class TournamentManager {
         if (this.gameCount <= 0) {
             this.onTournamentEnd();
         } else {
-            let worker = this.workers.get(workerId);
+            const worker = this.workers.get(workerId);
             if (!worker) {
                 return;
             }
@@ -113,7 +130,12 @@ export class TournamentManager {
         }
     }
 
-    private enqueueGame(ai: AIConstructor, deck1: DeckList, deck2: DeckList, playerNumbers: number[]) {
+    private enqueueGame(
+        ai: AIConstructor,
+        deck1: DeckList,
+        deck2: DeckList,
+        playerNumbers: number[]
+    ) {
         this.gameQueue.push({
             ai1: ai.name,
             ai2: ai.name,
@@ -125,15 +147,13 @@ export class TournamentManager {
     }
 
     private startGame() {
-
-
-        for (let workerHandle of Array.from(this.workers.values())) {
+        for (const workerHandle of Array.from(this.workers.values())) {
             if (!workerHandle.busy && workerHandle.worker.process.connected) {
-                const game = this.gameQueue.pop()
+                const game = this.gameQueue.pop();
                 if (!game) {
                     return;
                 }
-                let msg: StartGameMesage = {
+                const msg: StartGameMesage = {
                     type: MasterToWorkerMessageType.StartGame,
                     game: game
                 };
@@ -144,15 +164,19 @@ export class TournamentManager {
         }
     }
 
-    private sendMessageToWorker(worker: cluster.Worker, message: MasterToWorkerMessage) {
-        if (!worker.process.connected)
+    private sendMessageToWorker(
+        worker: cluster.Worker,
+        message: MasterToWorkerMessage
+    ) {
+        if (!worker.process.connected) {
             return;
+        }
         worker.send(message);
     }
 
     public registerCard(card: CardData) {
         this.newCards.push(card);
-        for (let workerHandle of Array.from(this.workers.values())) {
+        for (const workerHandle of Array.from(this.workers.values())) {
             this.sendCardToWorker(card, workerHandle.worker);
         }
     }
@@ -165,8 +189,8 @@ export class TournamentManager {
     }
 
     private buildScores(): number[] {
-        let scores = [];
-        for (let result of this.results) {
+        const scores = [];
+        for (const result of this.results) {
             if (!scores[result]) {
                 scores[result] = 0;
             }
@@ -185,8 +209,8 @@ export class TournamentManager {
         for (let i = 0; i < decks1.length; i++) {
             for (let j = 0; j < decks2.length; j++) {
                 for (let k = 0; k < numberOfGamesPerMatchup; k++) {
-                    let deck1 = decks1[i];
-                    let deck2 = decks2[i];
+                    const deck1 = decks1[i];
+                    const deck2 = decks2[i];
                     this.enqueueGame(ai, deck1, deck2, [0, 1]);
                     this.enqueueGame(ai, deck2, deck1, [1, 0]);
                 }
@@ -209,10 +233,12 @@ export class TournamentManager {
     ) {
         for (let i = 0; i < ais.length; i++) {
             for (let j = 0; j < ais.length; j++) {
-                if (i != j) {
+                if (i !== j) {
                     for (let k = 0; k < numberOfGamesPerMatchup; k++) {
-                        let deck1 = sample(decks) as DeckList;
-                        let deck2 = mirrorMode ? deck1 : sample(decks) as DeckList;
+                        const deck1 = sample(decks) as DeckList;
+                        const deck2 = mirrorMode
+                            ? deck1
+                            : (sample(decks) as DeckList);
                         this.enqueueGame(ais[i], deck1, deck2, [0, 1]);
                     }
                 }
@@ -224,29 +250,36 @@ export class TournamentManager {
         await new Promise(resolve => {
             this.onTournamentEnd = () => resolve();
         });
-        let scores = this.buildScores();
+        const scores = this.buildScores();
         this.announceResults(ais, scores);
         return scores;
     }
 
-
     private announceResults(ais: Array<AIConstructor>, scores: Array<number>) {
-        console.log('\nTournament Results ------------------------------------------')
+        console.log(
+            '\nTournament Results ------------------------------------------'
+        );
 
-        let results = ais.map((ai, i) => {
-            return {
-                name: `${ai.name} (${i + 1})`,
-                score: scores[i]
-            }
-        }).sort((a, b) => b.score - a.score);
+        const results = ais
+            .map((ai, i) => {
+                return {
+                    name: `${ai.name} (${i + 1})`,
+                    score: scores[i]
+                };
+            })
+            .sort((a, b) => b.score - a.score);
         let lastScore = results[0].score;
         let rank = 1;
-        for (let result of results) {
+        for (const result of results) {
             if (result.score < lastScore) {
                 lastScore = result.score;
                 rank++;
             }
-            console.log(`${rank}${this.getRankSuffix(rank)} place: ${result.name} with a score of ${result.score}.`);
+            console.log(
+                `${rank}${this.getRankSuffix(rank)} place: ${
+                    result.name
+                } with a score of ${result.score}.`
+            );
         }
     }
 
@@ -259,7 +292,6 @@ export class TournamentManager {
             return 'th';
         }
     }
-
 }
 
 export class TournamentWorker {
@@ -272,11 +304,13 @@ export class TournamentWorker {
         this.gameManger.annoucmentsOn = false;
         this.gameManger.exitOnFailure = false;
 
-        process.on('message', (msg: MasterToWorkerMessage) => this.readMessage(msg));
+        process.on('message', (msg: MasterToWorkerMessage) =>
+            this.readMessage(msg)
+        );
 
-        this.gameManger.onGameEnd = (winner) => {
-            if  (!process.send) {
-                throw new Error('No process.send avalible')
+        this.gameManger.onGameEnd = winner => {
+            if (!process.send) {
+                throw new Error('No process.send avalible');
             }
             if (isNaN(winner)) {
                 process.send({
@@ -293,8 +327,7 @@ export class TournamentWorker {
                     winner: this.playerNumbers[winner]
                 } as GameResultMessage);
             }
-
-        }
+        };
 
         if (process.send) {
             process.send({
@@ -302,7 +335,6 @@ export class TournamentWorker {
                 id: process.pid
             } as ReadyMessage);
         }
-        
     }
 
     private readMessage(message: MasterToWorkerMessage) {
@@ -316,7 +348,8 @@ export class TournamentWorker {
             case MasterToWorkerMessageType.Timeout:
                 this.timeout();
                 break;
-            default: return assertNever(message);
+            default:
+                return assertNever(message);
         }
     }
 
@@ -333,16 +366,21 @@ export class TournamentWorker {
     }
 
     private startGame(params: StartGameMesage) {
-        let ais = aiList.getConstructorsByName([params.game.ai1, params.game.ai2]);
+        const ais = aiList.getConstructorsByName([
+            params.game.ai1,
+            params.game.ai2
+        ]);
         this.gameInfo = params.game;
-        this.gameManger.startAIGame(ais[0], ais[1],
+        this.gameManger.startAIGame(
+            ais[0],
+            ais[1],
             new DeckList(standardFormat, params.game.deck1),
-            new DeckList(standardFormat, params.game.deck2));
+            new DeckList(standardFormat, params.game.deck2)
+        );
         this.playerNumbers = params.game.playerNumbers;
     }
-
 }
 
 function assertNever(x: never): never {
-    throw new Error("Unexpected object: " + x);
+    throw new Error('Unexpected object: ' + x);
 }

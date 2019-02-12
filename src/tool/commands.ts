@@ -1,10 +1,10 @@
-import * as fs from "fs";
-import { AIConstructor } from "../game_model/ai/aiList";
-import { camelCase, capitalize } from "lodash";
-import { BotPackager } from "./botPackager";
-import { GameManager } from "./gameManager";
-import { deckMap } from "../game_model/scenarios/decks";
-import { TournamentManager } from "./tournamentManager";
+import * as fs from 'fs';
+import { AIConstructor } from '../game_model/ai/aiList';
+import { camelCase, capitalize } from 'lodash';
+import { BotPackager } from './botPackager';
+import { GameManager } from './gameManager';
+import { deckMap } from '../game_model/scenarios/decks';
+import { TournamentManager } from './tournamentManager';
 
 const packager = new BotPackager();
 const manager = new GameManager();
@@ -20,9 +20,9 @@ export const createBot = (name: string) => {
 
 /**
  * ${name} is a Fifth Aeon bot.
- * 
+ *
  * It inherits the behavior of the default bot. You can customize it by overriding methods.
- * 
+ *
  * If you would rather work from scratch change extends DefaultAI to extends AI
  */
 export class ${typename} extends DefaultAI {
@@ -32,10 +32,11 @@ export class ${typename} extends DefaultAI {
 
     fs.writeFileSync(`src/bots/${identifier}.ts`, code);
 
-    fs.appendFileSync('src/bots/importBots.ts',
+    fs.appendFileSync(
+        'src/bots/importBots.ts',
         `import { ${typename} } from './${identifier}';
-aiList.registerConstructor(${typename});\n\n`);
-
+aiList.registerConstructor(${typename});\n\n`
+    );
 };
 
 const loadDecks = (deckNames: string[]) => {
@@ -43,11 +44,15 @@ const loadDecks = (deckNames: string[]) => {
         const properName = camelCase(name);
         const deck = deckMap.get(properName);
         if (!deck) {
-            throw new Error(`No deck named ${name} legal decks are ${Array.from(deckMap.keys())}.`);
+            throw new Error(
+                `No deck named ${name} legal decks are ${Array.from(
+                    deckMap.keys()
+                )}.`
+            );
         }
         return deck;
-    })
-}
+    });
+};
 
 export const runGame = (deckNames: string[], ais: AIConstructor[]) => {
     const decks = loadDecks(deckNames);
@@ -57,9 +62,19 @@ export const runGame = (deckNames: string[], ais: AIConstructor[]) => {
         throw new Error('No decks found with the given ids');
     }
     manager.startAIGame(ais[0], ais[1], deck1, deck2);
-}
+};
 
-export const runTournament = async (ais: AIConstructor[], deckNames: string[], mirrorMode: boolean, gamesPerMatchup: number) => {
-    await TournamentManager.getInstance().runRoundRobinTournament(ais, loadDecks(deckNames), mirrorMode, gamesPerMatchup);
+export const runTournament = async (
+    ais: AIConstructor[],
+    deckNames: string[],
+    mirrorMode: boolean,
+    gamesPerMatchup: number
+) => {
+    await TournamentManager.getInstance().runRoundRobinTournament(
+        ais,
+        loadDecks(deckNames),
+        mirrorMode,
+        gamesPerMatchup
+    );
     process.exit(0);
-}
+};
