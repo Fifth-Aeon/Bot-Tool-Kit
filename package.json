@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "balance": "ts-node src/tool/testBalancer.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs": "typedoc --out docs src/game_model"
   },
   "author": "William Ritson",
   "license": "Apache-2.0",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.14.117",
-    "@types/node": "^10.11.7"
+    "@types/node": "^10.11.7",
+    "typedoc": "^0.14.2"
   }
 }
