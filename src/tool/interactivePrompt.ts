@@ -6,6 +6,13 @@ import { createBot, packageBot, runGame, runTournament } from './commands';
 import { AIConstructor, aiList } from '../game_model/ai/aiList';
 import { allDecks } from '../game_model/scenarios/decks';
 import { DefaultAI } from '../game_model/ai/defaultAi';
+import { tournamentLoader } from './tournamentLoader';
+import {
+    TournamentDefinition,
+    Tournament,
+    TournamentType
+} from './tournamentDefinition';
+import { DeckList } from '../game_model/deckList';
 
 const chalk = require('chalk');
 
@@ -23,7 +30,8 @@ const createBanner = () => {
 
 const askForCommand = async () => {
     const options = {
-        tournament: 'Run a round robin tournament',
+        tournament: 'Run a tournament',
+        tournamentDef: 'Create a new tournament definition',
         game: 'Run a game (between 2 bots)',
         create: 'Create a new bot',
         package: 'Package a bot for distribution'
@@ -35,6 +43,7 @@ const askForCommand = async () => {
             message: 'What would you like to do?',
             choices: [
                 options.tournament,
+                options.tournamentDef,
                 options.game,
                 options.create,
                 options.package
@@ -54,6 +63,9 @@ const askForCommand = async () => {
             getGameDetails();
             break;
         case options.tournament:
+            getTournamentToStart();
+            break;
+        case options.tournamentDef:
             getTournamentDetails();
             break;
     }
@@ -100,7 +112,7 @@ const getGameDetails = async () => {
     );
 };
 
-const getDeckSet = async (): Promise<string[]> => {
+const getDeckSet = async (): Promise<DeckList[]> => {
     const result = await inquirer.prompt([
         {
             type: 'checkbox',
@@ -109,7 +121,7 @@ const getDeckSet = async (): Promise<string[]> => {
             choices: allDecks.map(deck => deck.name).sort()
         }
     ]);
-    return (result as any).deckNames as string[];
+    return tournamentLoader.getDecksByName((result as any).deckNames as string[]);
 };
 
 const getAISet = async (): Promise<AIConstructor[]> => {
@@ -157,13 +169,34 @@ const getMatchNumber = async (): Promise<number> => {
     return (result as any).count as number;
 };
 
+const getTournamentDefinition = async (): Promise<Tournament> => {
+    console.log(tournamentLoader.getTournamentNames());
+    const result = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'definitonName',
+            message: 'Choose a tournament definition',
+            choices: tournamentLoader.getTournamentNames()
+        }
+    ]);
+    return tournamentLoader.getTournamentByName((result as any)
+        .definitonName as string);
+};
+
+const getTournamentToStart = async () => {
+    const tourny = await getTournamentDefinition();
+    runTournament(tourny);
+};
+
 const getTournamentDetails = async () => {
+    /*
     runTournament(
         await getAISet(),
         await getDeckSet(),
         await getMirrorMode(),
         await getMatchNumber()
     );
+    */
 };
 
 const getNewBotDetails = async () => {

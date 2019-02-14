@@ -5,6 +5,8 @@ import { BotPackager } from './botPackager';
 import { GameManager } from './gameManager';
 import { deckMap } from '../game_model/scenarios/decks';
 import { TournamentManager } from './tournamentManager';
+import { DeckList } from 'game_model/deckList';
+import { Tournament, TournamentType } from './tournamentDefinition';
 
 const packager = new BotPackager();
 const manager = new GameManager();
@@ -64,17 +66,16 @@ export const runGame = (deckNames: string[], ais: AIConstructor[]) => {
     manager.startAIGame(ais[0], ais[1], deck1, deck2);
 };
 
-export const runTournament = async (
-    ais: AIConstructor[],
-    deckNames: string[],
-    mirrorMode: boolean,
-    gamesPerMatchup: number
-) => {
-    await TournamentManager.getInstance().runRoundRobinTournament(
-        ais,
-        loadDecks(deckNames),
-        mirrorMode,
-        gamesPerMatchup
-    );
+export const runTournament = async (tournament: Tournament) => {
+    switch (tournament.type) {
+        case TournamentType.Preconstructed:
+            await TournamentManager.getInstance().runRoundRobinTournament(
+                tournament.ais,
+                tournament.deckPool,
+                tournament.mirrorMode,
+                tournament.gamesPerMatchup
+            );
+            break;
+    }
     process.exit(0);
 };

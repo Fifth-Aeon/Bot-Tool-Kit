@@ -1,6 +1,7 @@
 import * as commander from 'commander';
 import { runTournament, runGame, createBot, packageBot } from './commands';
 import { aiList } from '../game_model/ai/aiList';
+import { tournamentLoader } from './tournamentLoader';
 
 export function readArgs() {
     commander
@@ -60,10 +61,10 @@ function parseTournamentArgs(
     mirror: string
 ) {
     const constructors = aiList.getConstructorsByName(aiNames.split(','));
-    const deckNamesTokenized = deckNames.split(',');
+    const decks = tournamentLoader.getDecksByName(deckNames.split(','));
     const gameCount = parseInt(numberOfGames, 10);
     const mirrorMode = mirror === 'true' ? true : false;
-    runTournament(constructors, deckNamesTokenized, mirrorMode, gameCount);
+    // runTournament(constructors, decks, mirrorMode, gameCount);
 }
 
 function parseGameArgs(

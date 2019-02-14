@@ -1,0 +1,8 @@
+{
+    "name": "Standard Preconstructed",
+    "type": "Preconstructed",
+    "deckPool": "UseAll",
+    "ais": "UseAll",
+    "mirrorMode": false,
+    "gamesPerMatchup": 10
+}
