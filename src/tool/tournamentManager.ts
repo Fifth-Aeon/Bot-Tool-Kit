@@ -44,7 +44,11 @@ export class TournamentManager {
                     workerHandle.worker.kill();
                     if (workerHandle.game) {
                         this.gameQueue.push(workerHandle.game);
-                        console.warn(`(it was ${workerHandle.game.deck1.name} vs ${workerHandle.game.deck2.name})`);
+                        console.warn(
+                            `(it was ${workerHandle.game.deck1.name} vs ${
+                                workerHandle.game.deck2.name
+                            })`
+                        );
                     }
                     this.workers.delete(workerHandle.worker.process.pid);
                 }
@@ -78,7 +82,12 @@ export class TournamentManager {
         worker.on('message', (msg: WorkerToMasterMessage) => {
             if (msg.type === WorkerToMasterMessageType.GameResult) {
                 if (msg.error === true) {
-                    console.warn('got error result, requing', msg.game.deck1, 'vs',  msg.game.deck2);
+                    console.warn(
+                        'got error result, requing',
+                        msg.game.deck1,
+                        'vs',
+                        msg.game.deck2
+                    );
                     this.gameQueue.push(msg.game);
                 } else {
                     this.writeResult(msg.winner, msg.id);
@@ -235,7 +244,7 @@ export class TournamentManager {
     ) {
         for (let i = 0; i < ais.length; i++) {
             for (let j = 0; j < ais.length; j++) {
-                if (i !== j) {
+                if (i > j) {
                     for (let k = 0; k < numberOfGamesPerMatchup; k++) {
                         for (const deck1 of decks) {
                             if (mirrorMode) {
@@ -309,14 +318,19 @@ export class TournamentManager {
         }
     }
 
-    private getRankSuffix(rank: number) {
-        if (rank === 1) {
+    private getRankSuffix(i: number) {
+        const j = i % 10,
+            k = i % 100;
+        if (j === 1 && k !== 11) {
             return 'st';
-        } else if (rank === 2) {
-            return 'ed';
-        } else {
-            return 'th';
         }
+        if (j === 2 && k !== 12) {
+            return 'nd';
+        }
+        if (j === 3 && k !== 13) {
+            return 'rd';
+        }
+        return 'th';
     }
 }
 
