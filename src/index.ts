@@ -1,11 +1,13 @@
-import { openInteractivePrompt } from "./tool/interactivePrompt";
-import * as bots from "./bots/importBots";
-import { readArgs } from "./tool/commandMode";
-import * as cluster from "cluster";
-import { TournamentManager, TournamentWorker } from "./tool/tournamentManager";
+import { openInteractivePrompt } from './tool/interactivePrompt';
+import * as bots from './bots/importBots';
+import { readArgs } from './tool/commandMode';
+import * as cluster from 'cluster';
+import { TournamentManager, TournamentWorker } from './tool/tournamentManager';
 
 // Unhandled promise rejections should throw exceptions
-process.on('unhandledRejection', up => { throw up });
+process.on('unhandledRejection', up => {
+    throw up;
+});
 
 if (cluster.isMaster) {
     const numWorkers = require('os').cpus().length;
@@ -16,13 +18,13 @@ if (cluster.isMaster) {
         manager.createWorker();
     }
 
-    if (process.argv.length <= 2 ) {
+    if (process.argv.length <= 2) {
         openInteractivePrompt();
     } else {
         readArgs();
     }
 } else {
-    new TournamentWorker();
+    const worker = new TournamentWorker();
 }
 
-bots;
+const importBotz = bots;

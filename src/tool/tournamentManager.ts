@@ -44,6 +44,7 @@ export class TournamentManager {
                     workerHandle.worker.kill();
                     if (workerHandle.game) {
                         this.gameQueue.push(workerHandle.game);
+                        console.warn(`(it was ${workerHandle.game.deck1.name} vs ${workerHandle.game.deck2.name})`);
                     }
                     this.workers.delete(workerHandle.worker.process.pid);
                 }
@@ -58,7 +59,7 @@ export class TournamentManager {
     private gameCount = 0;
     private results: number[] = [];
 
-    public static getInstance(timeLimit: number = 8500) {
+    public static getInstance(timeLimit: number = 30000) {
         if (!this.instance) {
             this.instance = new TournamentManager(timeLimit);
         }
@@ -77,7 +78,7 @@ export class TournamentManager {
         worker.on('message', (msg: WorkerToMasterMessage) => {
             if (msg.type === WorkerToMasterMessageType.GameResult) {
                 if (msg.error === true) {
-                    console.warn('got error result, requing');
+                    console.warn('got error result, requing', msg.game.deck1, 'vs',  msg.game.deck2);
                     this.gameQueue.push(msg.game);
                 } else {
                     this.writeResult(msg.winner, msg.id);
@@ -131,14 +132,15 @@ export class TournamentManager {
     }
 
     private enqueueGame(
-        ai: AIConstructor,
+        ai1: AIConstructor,
+        ai2: AIConstructor,
         deck1: DeckList,
         deck2: DeckList,
         playerNumbers: number[]
     ) {
         this.gameQueue.push({
-            ai1: ai.name,
-            ai2: ai.name,
+            ai1: ai1.name,
+            ai2: ai2.name,
             deck1: deck1.getSavable(),
             deck2: deck2.getSavable(),
             playerNumbers: playerNumbers
@@ -211,8 +213,8 @@ export class TournamentManager {
                 for (let k = 0; k < numberOfGamesPerMatchup; k++) {
                     const deck1 = decks1[i];
                     const deck2 = decks2[i];
-                    this.enqueueGame(ai, deck1, deck2, [0, 1]);
-                    this.enqueueGame(ai, deck2, deck1, [1, 0]);
+                    this.enqueueGame(ai, ai, deck1, deck2, [0, 1]);
+                    this.enqueueGame(ai, ai, deck2, deck1, [1, 0]);
                 }
             }
         }
@@ -235,11 +237,35 @@ export class TournamentManager {
             for (let j = 0; j < ais.length; j++) {
                 if (i !== j) {
                     for (let k = 0; k < numberOfGamesPerMatchup; k++) {
-                        const deck1 = sample(decks) as DeckList;
-                        const deck2 = mirrorMode
-                            ? deck1
-                            : (sample(decks) as DeckList);
-                        this.enqueueGame(ais[i], deck1, deck2, [0, 1]);
+                        for (const deck1 of decks) {
+                            if (mirrorMode) {
+                                this.enqueueGame(ais[i], ais[j], deck1, deck1, [
+                                    0,
+                                    1
+                                ]);
+                                this.enqueueGame(ais[j], ais[i], deck1, deck1, [
+                                    0,
+                                    1
+                                ]);
+                            } else {
+                                for (const deck2 of decks) {
+                                    this.enqueueGame(
+                                        ais[i],
+                                        ais[j],
+                                        deck1,
+                                        deck2,
+                                        [0, 1]
+                                    );
+                                    this.enqueueGame(
+                                        ais[j],
+                                        ais[i],
+                                        deck1,
+                                        deck2,
+                                        [0, 1]
+                                    );
+                                }
+                            }
+                        }
                     }
                 }
             }
