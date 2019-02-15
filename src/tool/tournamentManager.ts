@@ -30,10 +30,11 @@ export class TournamentManager {
         if (TournamentManager.instance !== undefined) {
             throw new Error('May only have one tournament manager singleton');
         }
+        const checkTimeoutInterval = 500;
         setInterval(() => {
             for (const workerHandle of Array.from(this.workers.values())) {
                 if (workerHandle.busy) {
-                    workerHandle.runtime += this.timeLimit;
+                    workerHandle.runtime += checkTimeoutInterval;
                 }
                 if (workerHandle.runtime >= this.timeLimit) {
                     console.warn(
@@ -51,9 +52,11 @@ export class TournamentManager {
                         );
                     }
                     this.workers.delete(workerHandle.worker.process.pid);
+                    this.createWorker();
+
                 }
             }
-        }, this.timeLimit);
+        }, checkTimeoutInterval);
     }
     static instance: TournamentManager;
 
@@ -108,13 +111,14 @@ export class TournamentManager {
         worker.on('disconnect', () => {
             if (this.workers.has(worker.process.pid)) {
                 this.workers.delete(worker.process.pid);
+                console.warn(
+                    `Worker ${worker.id}:${
+                        worker.process.pid
+                    } disconnected. Spawning a new worker.`
+                );
+                this.createWorker();
             }
-            console.warn(
-                `Worker ${worker.id}:${
-                    worker.process.pid
-                } disconnected. Spawning a new worker.`
-            );
-            this.createWorker();
+            
         });
     }
 
@@ -347,6 +351,8 @@ export class TournamentWorker {
         process.on('message', (msg: MasterToWorkerMessage) =>
             this.readMessage(msg)
         );
+
+        setInterval(() => console.log('I live!', process.pid), 3000);
 
         this.gameManger.onGameEnd = winner => {
             if (!process.send) {
