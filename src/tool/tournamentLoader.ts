@@ -11,7 +11,7 @@ import {
 } from './tournamentDefinition';
 import { SavedDeck, DeckList } from '../game_model/deckList';
 import { standardFormat } from '../game_model/gameFormat';
-import { aiList } from '../game_model/ai/aiList';
+import { aiList, AIConstructor } from '../game_model/ai/aiList';
 import { allDecks } from '../game_model/scenarios/decks';
 
 class TournamentLoader {
@@ -68,11 +68,14 @@ class TournamentLoader {
                     type: definition.type
                 } as PreconstructedTournament;
             case TournamentType.Constructed:
+                const aisWithDecks = new Map<AIConstructor, DeckList[]>();
+                for (const key in definition.aisWithDecks) {
+                    if (definition.aisWithDecks) {
+                        aisWithDecks.set(this.getAiConstructor(key), this.getDecksByName(definition.aisWithDecks[key]));
+                    }
+                }
                 return {
-                    ais: this.getAiConstructors(definition.ais),
-                    aiDeckPools: definition.aiDeckPools.map(pool =>
-                        this.getDecksByName(pool)
-                    ),
+                    aisWithDecks: aisWithDecks,
                     gamesPerMatchup: definition.gamesPerMatchup,
                     type: definition.type
                 } as ConstructedTournament;
@@ -91,6 +94,10 @@ class TournamentLoader {
             return aiList.getConstructors();
         }
         return aiList.getConstructorsByName(names);
+    }
+
+    private getAiConstructor(name: string) {
+        return aiList.getConstructorsByName([name])[0];
     }
 
     private readAllTournaments() {

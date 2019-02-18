@@ -170,7 +170,6 @@ const getMatchNumber = async (): Promise<number> => {
 };
 
 const getTournamentDefinition = async (): Promise<Tournament> => {
-    console.log(tournamentLoader.getTournamentNames());
     const result = await inquirer.prompt([
         {
             type: 'list',

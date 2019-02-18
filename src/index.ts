@@ -10,7 +10,7 @@ process.on('unhandledRejection', up => {
 });
 
 if (cluster.isMaster) {
-    const numWorkers = require('os').cpus().length;
+    const numWorkers = require('os').cpus().length - 1;
     const manager = TournamentManager.getInstance();
 
     console.warn('create', numWorkers, 'workers');
@@ -24,7 +24,7 @@ if (cluster.isMaster) {
         readArgs();
     }
 } else {
-    const worker = new TournamentWorker();
+    new TournamentWorker();
 }
 
 const importBotz = bots;

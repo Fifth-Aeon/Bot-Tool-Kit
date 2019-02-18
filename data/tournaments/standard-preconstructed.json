@@ -3,6 +3,6 @@
     "type": "Preconstructed",
     "deckPool": "UseAll",
     "ais": "UseAll",
-    "mirrorMode": false,
+    "mirrorMode": true,
     "gamesPerMatchup": 10
 }

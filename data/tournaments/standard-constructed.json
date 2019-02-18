@@ -1,0 +1,9 @@
+{
+    "name": "Standard Constructed",
+    "type": "Constructed",
+    "aisWithDecks": {
+        "DefaultAI": ["March of Undeath", "Ancient Giants"],
+        "BerserkerAI": ["The King’s Legions", "Skies and Seas"]
+    },
+    "gamesPerMatchup": 10
+}

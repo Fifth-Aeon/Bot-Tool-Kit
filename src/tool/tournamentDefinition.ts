@@ -40,16 +40,16 @@ interface PreconstructedTournamentDefinition {
 
 export interface ConstructedTournament {
     type: TournamentType.Constructed;
-    ais: AIConstructor[];
-    aiDeckPools: DeckList[][];
+    aisWithDecks: Map<AIConstructor, DeckList[]>;
     gamesPerMatchup: number;
 }
 
 interface ConstructedTournamentDefinition {
     name: string;
     type: TournamentType.Constructed;
-    ais: string[] | TournamentOptions.UseAll;
-    aiDeckPools: string[][];
+    aisWithDecks: {
+        [key: string]: string[];
+    };
     gamesPerMatchup: number;
 }
 

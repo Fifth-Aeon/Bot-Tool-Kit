@@ -1,10 +1,9 @@
 import * as cluster from 'cluster';
-import { sample } from 'lodash';
-import { GameManager, GameInfo } from './gameManager';
 import { AIConstructor, aiList } from '../game_model/ai/aiList';
 import { CardData, cardList } from '../game_model/cards/cardList';
-import { DeckList, SavedDeck } from '../game_model/deckList';
+import { DeckList } from '../game_model/deckList';
 import { standardFormat } from '../game_model/gameFormat';
+import { GameInfo, GameManager } from './gameManager';
 import {
     AddCardMessage,
     MasterToWorkerMessage,
@@ -50,10 +49,17 @@ export class TournamentManager {
                                 workerHandle.game.deck2.name
                             })`
                         );
+                    } else {
+                        this.gameCount--;
                     }
                     this.workers.delete(workerHandle.worker.process.pid);
                     this.createWorker();
-
+                } else {
+                    console.log(
+                        workerHandle.worker.id,
+                        workerHandle.runtime,
+                        this.timeLimit
+                    );
                 }
             }
         }, checkTimeoutInterval);
@@ -118,7 +124,6 @@ export class TournamentManager {
                 );
                 this.createWorker();
             }
-            
         });
     }
 
@@ -130,7 +135,7 @@ export class TournamentManager {
     private writeResult(result: number, workerId: number) {
         this.gameCount--;
         this.results.push(result);
-        console.warn(`Game completed ${this.gameCount} remain.`);
+        console.warn(`Game completed ${this.gameCount} remain. ${this.gameQueue.length}`);
         if (this.gameCount <= 0) {
             this.onTournamentEnd();
         } else {
@@ -352,7 +357,17 @@ export class TournamentWorker {
             this.readMessage(msg)
         );
 
-        setInterval(() => console.log('I live!', process.pid), 3000);
+        setInterval(() => {
+            const gameName = this.gameInfo
+                ? this.gameInfo.deck1.name + ' vs ' + this.gameInfo.deck2.name
+                : 'nothing';
+            console.log(
+                'Worker:',
+                process.pid,
+                'Alive and working on',
+                gameName
+            );
+        }, 3000);
 
         this.gameManger.onGameEnd = winner => {
             if (!process.send) {
