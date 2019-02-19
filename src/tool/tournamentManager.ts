@@ -1,8 +1,9 @@
 import * as cluster from 'cluster';
+import { sample } from 'lodash';
 import { AIConstructor, aiList } from '../game_model/ai/aiList';
 import { CardData, cardList } from '../game_model/cards/cardList';
 import { DeckList } from '../game_model/deckList';
-import { standardFormat } from '../game_model/gameFormat';
+import { limitedFormat, standardFormat } from '../game_model/gameFormat';
 import { GameInfo, GameManager } from './gameManager';
 import {
     AddCardMessage,
@@ -11,11 +12,17 @@ import {
     StartGameMesage
 } from './masterToWorkerMessages';
 import {
+    ConstructedTournament,
+    LimitedTournament,
+    PreconstructedTournament
+} from './tournamentDefinition';
+import {
     GameResultMessage,
     ReadyMessage,
     WorkerToMasterMessage,
     WorkerToMasterMessageType
 } from './workerToMasterMessages';
+import { Card } from 'game_model/card-types/card';
 
 interface WorkerHandle {
     readonly worker: cluster.Worker;
@@ -54,12 +61,6 @@ export class TournamentManager {
                     }
                     this.workers.delete(workerHandle.worker.process.pid);
                     this.createWorker();
-                } else {
-                    console.log(
-                        workerHandle.worker.id,
-                        workerHandle.runtime,
-                        this.timeLimit
-                    );
                 }
             }
         }, checkTimeoutInterval);
@@ -135,7 +136,7 @@ export class TournamentManager {
     private writeResult(result: number, workerId: number) {
         this.gameCount--;
         this.results.push(result);
-        console.warn(`Game completed ${this.gameCount} remain. ${this.gameQueue.length}`);
+        console.warn(`Game completed ${this.gameCount} remain.`);
         if (this.gameCount <= 0) {
             this.onTournamentEnd();
         } else {
@@ -245,41 +246,109 @@ export class TournamentManager {
         return this.buildScores();
     }
 
-    public async runRoundRobinTournament(
-        ais: Array<AIConstructor>,
-        decks: Array<DeckList>,
-        mirrorMode: boolean,
-        numberOfGamesPerMatchup: number
-    ) {
+    public async runConstructedTournament(tournament: ConstructedTournament) {
+        const entries = Array.from(tournament.aisWithDecks.entries());
+        for (let i = 0; i < entries.length; i++) {
+            for (let j = 0; j < entries.length; j++) {
+                if (i > j) {
+                    for (let k = 0; k < tournament.gamesPerMatchup; k++) {
+                        for (const deck1 of entries[i][1]) {
+                            for (const deck2 of entries[j][1]) {
+                                this.enqueueGame(
+                                    entries[i][0],
+                                    entries[j][0],
+                                    deck1,
+                                    deck2,
+                                    [i, j]
+                                );
+                                this.enqueueGame(
+                                    entries[j][0],
+                                    entries[i][0],
+                                    deck1,
+                                    deck2,
+                                    [j, i]
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return this.startTournament();
+    }
+
+    public async runLimitedTournament(tournament: LimitedTournament) {
+        const ais = tournament.ais;
+        const cardPool = this.formLimitedPool(tournament.cardsInPool);
+        const decks = ais.map(ai =>
+            ai.getDeckbuilder().formDeckFromPool(cardPool, limitedFormat)
+        );
+        console.log(decks);
         for (let i = 0; i < ais.length; i++) {
             for (let j = 0; j < ais.length; j++) {
                 if (i > j) {
-                    for (let k = 0; k < numberOfGamesPerMatchup; k++) {
-                        for (const deck1 of decks) {
-                            if (mirrorMode) {
-                                this.enqueueGame(ais[i], ais[j], deck1, deck1, [
-                                    0,
-                                    1
-                                ]);
-                                this.enqueueGame(ais[j], ais[i], deck1, deck1, [
-                                    0,
-                                    1
-                                ]);
+                    for (let k = 0; k < tournament.gamesPerMatchup; k++) {
+                        this.enqueueGame(ais[i], ais[j], decks[i], decks[j], [
+                            i,
+                            j
+                        ]);
+                        this.enqueueGame(ais[j], ais[i], decks[j], decks[i], [
+                            j,
+                            i
+                        ]);
+                    }
+                }
+            }
+        }
+        return this.startTournament();
+    }
+
+    private formLimitedPool(size: number): DeckList {
+        const pool = new DeckList();
+        for (let i = 0; i < size; i++) {
+            pool.addCard(sample(cardList.getCards()) as Card);
+        }
+        return pool;
+    }
+
+    public async runPreconstructedTournament(
+        tournament: PreconstructedTournament
+    ) {
+        for (let i = 0; i < tournament.ais.length; i++) {
+            for (let j = 0; j < tournament.ais.length; j++) {
+                if (i > j) {
+                    for (let k = 0; k < tournament.gamesPerMatchup; k++) {
+                        for (const deck1 of tournament.deckPool) {
+                            if (tournament.mirrorMode) {
+                                this.enqueueGame(
+                                    tournament.ais[i],
+                                    tournament.ais[j],
+                                    deck1,
+                                    deck1,
+                                    [i, j]
+                                );
+                                this.enqueueGame(
+                                    tournament.ais[j],
+                                    tournament.ais[i],
+                                    deck1,
+                                    deck1,
+                                    [j, i]
+                                );
                             } else {
-                                for (const deck2 of decks) {
+                                for (const deck2 of tournament.deckPool) {
                                     this.enqueueGame(
-                                        ais[i],
-                                        ais[j],
+                                        tournament.ais[i],
+                                        tournament.ais[j],
                                         deck1,
                                         deck2,
-                                        [0, 1]
+                                        [i, j]
                                     );
                                     this.enqueueGame(
-                                        ais[j],
-                                        ais[i],
+                                        tournament.ais[j],
+                                        tournament.ais[i],
                                         deck1,
                                         deck2,
-                                        [0, 1]
+                                        [j, i]
                                     );
                                 }
                             }
@@ -288,6 +357,10 @@ export class TournamentManager {
                 }
             }
         }
+        return this.startTournament();
+    }
+
+    private async startTournament() {
         for (let i = 0; i < this.workers.size; i++) {
             this.startGame();
         }
@@ -295,11 +368,10 @@ export class TournamentManager {
             this.onTournamentEnd = () => resolve();
         });
         const scores = this.buildScores();
-        this.announceResults(ais, scores);
         return scores;
     }
 
-    private announceResults(ais: Array<AIConstructor>, scores: Array<number>) {
+    public announceResults(ais: Array<AIConstructor>, scores: Array<number>) {
         console.log(
             '\nTournament Results ------------------------------------------'
         );
@@ -357,6 +429,7 @@ export class TournamentWorker {
             this.readMessage(msg)
         );
 
+        /*
         setInterval(() => {
             const gameName = this.gameInfo
                 ? this.gameInfo.deck1.name + ' vs ' + this.gameInfo.deck2.name
@@ -368,6 +441,7 @@ export class TournamentWorker {
                 gameName
             );
         }, 3000);
+        */
 
         this.gameManger.onGameEnd = winner => {
             if (!process.send) {

@@ -67,14 +67,28 @@ export const runGame = (deckNames: string[], ais: AIConstructor[]) => {
 };
 
 export const runTournament = async (tournament: Tournament) => {
+    let results: number[];
+    const tournamentManager = TournamentManager.getInstance();
     switch (tournament.type) {
         case TournamentType.Preconstructed:
-            await TournamentManager.getInstance().runRoundRobinTournament(
-                tournament.ais,
-                tournament.deckPool,
-                tournament.mirrorMode,
-                tournament.gamesPerMatchup
+            results = await tournamentManager.runPreconstructedTournament(
+                tournament
             );
+            tournamentManager.announceResults(tournament.ais, results);
+            break;
+        case TournamentType.Constructed:
+            results = await tournamentManager.runConstructedTournament(
+                tournament
+            );
+            tournamentManager.announceResults(
+                Array.from(tournament.aisWithDecks.keys()),
+                results
+            );
+            break;
+
+        case TournamentType.Limited:
+            results = await tournamentManager.runLimitedTournament(tournament);
+            tournamentManager.announceResults(tournament.ais, results);
             break;
     }
     process.exit(0);

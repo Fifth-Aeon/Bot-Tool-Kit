@@ -1,0 +1,8 @@
+{
+    "name": "Test Preconstructed",
+    "type": "Preconstructed",
+    "deckPool": ["March of Undeath"],
+    "ais":  ["BerserkerAI", "BerserkerAI", "BerserkerAI"],
+    "mirrorMode": true,
+    "gamesPerMatchup": 10
+}
