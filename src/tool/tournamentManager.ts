@@ -283,7 +283,6 @@ export class TournamentManager {
         const decks = ais.map(ai =>
             ai.getDeckbuilder().formDeckFromPool(cardPool, limitedFormat)
         );
-        console.log(decks);
         for (let i = 0; i < ais.length; i++) {
             for (let j = 0; j < ais.length; j++) {
                 if (i > j) {

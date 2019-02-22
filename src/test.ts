@@ -3,6 +3,8 @@ import * as bots from './bots/importBots';
 import { readArgs } from './tool/commandMode';
 import * as cluster from 'cluster';
 import { TournamentManager, TournamentWorker } from './tool/tournamentManager';
+import { runTournament } from './tool/commands';
+import { tournamentLoader } from './tool/tournamentLoader';
 
 // Unhandled promise rejections should throw exceptions
 process.on('unhandledRejection', up => {
@@ -18,11 +20,7 @@ if (cluster.isMaster) {
         manager.createWorker();
     }
 
-    if (process.argv.length <= 2) {
-        openInteractivePrompt();
-    } else {
-        readArgs();
-    }
+    runTournament(tournamentLoader.getTournamentByName('Standard Limited'));
 } else {
     // tslint:disable-next-line:no-unused-expression
     new TournamentWorker();

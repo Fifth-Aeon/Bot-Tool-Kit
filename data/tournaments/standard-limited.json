@@ -2,6 +2,6 @@
     "name": "Standard Limited",
     "type": "Limited",
     "ais": "UseAll",
-    "gamesPerMatchup": 30,
+    "gamesPerMatchup": 100,
     "cardsInPool": 100
 }
