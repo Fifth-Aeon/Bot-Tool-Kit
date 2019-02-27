@@ -79,52 +79,14 @@ export class GameManager {
     private sendEventsToLocalPlayers(events: GameSyncEvent[]) {
         setTimeout(() => {
             for (const event of events) {
-                let aiNum = 0;
                 for (const ai of this.ais) {
                     try {
                         ai.handleGameEvent(event);
                     } catch (error) {
                         console.error('Failure while sending events to A.Is');
                         console.error(error);
-                        // console.error('Game 1 Units', this.game1.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
-                        // console.error('Game 2 Units', this.game2.getBoard().getAllUnits().map(unit => [unit.getName(), unit.getId()]));
-
-                        if (!this.gameModel || !this.game1 || !this.game2) {
-                            throw new Error('Gamee not initlized properly');
-                        }
-
-                        console.error(
-                            `Game 1 hand`,
-                            this.game1
-                                .getPlayer(aiNum)
-                                .getHand()
-                                .map(card => [card.getName(), card.getId()])
-                        );
-                        console.error(
-                            `Game 2 hand`,
-                            this.game2
-                                .getPlayer(aiNum)
-                                .getHand()
-                                .map(card => [card.getName(), card.getId()])
-                        );
-                        console.error(
-                            `Game S hand`,
-                            this.gameModel
-                                .getPlayer(aiNum)
-                                .getHand()
-                                .map(card => [card.getName(), card.getId()])
-                        );
-
-                        this.printGameEvents(this.game1, 4);
-                        this.printGameEvents(this.game2, 4);
-                        this.printGameEvents(this.gameModel, 4);
-
-                        // console.error('Game 1 cards', this.game1.lastCardsPlayed);
-                        // console.error('Game 2 cards', this.game2.lastCardsPlayed);
-                        // console.error('server cards', this.gameModel.lastCardsPlayed);
                         this.onFailure();
                     }
-                    aiNum++;
                 }
                 this.watchGame(event);
             }
@@ -204,36 +166,6 @@ export class GameManager {
                 action
             );
 
-            console.error(this.gameModel.lastCardsPlayed);
-            console.error(this.game1.lastCardsPlayed);
-            console.error(this.game2.lastCardsPlayed);
-
-            console.error(
-                'Game 1 Units',
-                this.game1
-                    .getBoard()
-                    .getAllUnits()
-                    .map(unit => this.summerizeUnit(unit))
-            );
-            console.error(
-                'Game 2 Units',
-                this.game2
-                    .getBoard()
-                    .getAllUnits()
-                    .map(unit => this.summerizeUnit(unit))
-            );
-            console.error(
-                'S Game Units',
-                this.gameModel
-                    .getBoard()
-                    .getAllUnits()
-                    .map(unit => this.summerizeUnit(unit))
-            );
-
-            this.printCards(this.game1);
-            this.printCards(this.game2);
-            this.printCards(this.gameModel);
-
             this.onFailure();
 
             return;
@@ -291,8 +223,6 @@ export class GameManager {
         this.seed = this.loadOrGenerateSeed();
         ServerGame.setSeed(this.seed);
 
-        // The player always goes first vs the A.I
-        // let aiDeck = sample(allDecks);
         const animator = new Animator(0.0001);
 
         if (this.annoucmentsOn) {

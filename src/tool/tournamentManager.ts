@@ -1,10 +1,11 @@
 import * as cluster from 'cluster';
+import { Card } from 'game_model/card-types/card';
 import { sample } from 'lodash';
-import { AIConstructor, aiList } from '../game_model/ai/aiList';
+import { AIConstructor } from '../game_model/ai/aiList';
 import { CardData, cardList } from '../game_model/cards/cardList';
 import { DeckList } from '../game_model/deckList';
-import { limitedFormat, standardFormat } from '../game_model/gameFormat';
-import { GameInfo, GameManager } from './gameManager';
+import { limitedFormat } from '../game_model/gameFormat';
+import { GameInfo } from './gameManager';
 import {
     AddCardMessage,
     MasterToWorkerMessage,
@@ -17,12 +18,9 @@ import {
     PreconstructedTournament
 } from './tournamentDefinition';
 import {
-    GameResultMessage,
-    ReadyMessage,
     WorkerToMasterMessage,
     WorkerToMasterMessageType
 } from './workerToMasterMessages';
-import { Card } from 'game_model/card-types/card';
 
 interface WorkerHandle {
     readonly worker: cluster.Worker;
@@ -412,109 +410,4 @@ export class TournamentManager {
         }
         return 'th';
     }
-}
-
-export class TournamentWorker {
-    private gameManger: GameManager;
-    private playerNumbers: number[] = [];
-    private gameInfo?: GameInfo;
-
-    constructor() {
-        this.gameManger = new GameManager();
-        this.gameManger.annoucmentsOn = false;
-        this.gameManger.exitOnFailure = false;
-
-        process.on('message', (msg: MasterToWorkerMessage) =>
-            this.readMessage(msg)
-        );
-
-        /*
-        setInterval(() => {
-            const gameName = this.gameInfo
-                ? this.gameInfo.deck1.name + ' vs ' + this.gameInfo.deck2.name
-                : 'nothing';
-            console.log(
-                'Worker:',
-                process.pid,
-                'Alive and working on',
-                gameName
-            );
-        }, 3000);
-        */
-
-        this.gameManger.onGameEnd = winner => {
-            if (!process.send) {
-                throw new Error('No process.send avalible');
-            }
-            if (isNaN(winner)) {
-                process.send({
-                    type: WorkerToMasterMessageType.GameResult,
-                    id: process.pid,
-                    error: true,
-                    game: this.gameInfo
-                } as GameResultMessage);
-            } else {
-                process.send({
-                    type: WorkerToMasterMessageType.GameResult,
-                    id: process.pid,
-                    error: false,
-                    winner: this.playerNumbers[winner]
-                } as GameResultMessage);
-            }
-        };
-
-        if (process.send) {
-            process.send({
-                type: WorkerToMasterMessageType.Ready,
-                id: process.pid
-            } as ReadyMessage);
-        }
-    }
-
-    private readMessage(message: MasterToWorkerMessage) {
-        switch (message.type) {
-            case MasterToWorkerMessageType.StartGame:
-                this.startGame(message);
-                break;
-            case MasterToWorkerMessageType.AddCard:
-                this.addCardToPool(message);
-                break;
-            case MasterToWorkerMessageType.Timeout:
-                this.timeout();
-                break;
-            default:
-                return assertNever(message);
-        }
-    }
-
-    private timeout() {
-        this.gameManger.reset();
-        console.warn(`Worker ${process.pid} timed out.`);
-        if (process.send) {
-            process.send(-1);
-        }
-    }
-
-    private addCardToPool(params: AddCardMessage) {
-        cardList.addFactory(cardList.buildCardFactory(params.cardData));
-    }
-
-    private startGame(params: StartGameMesage) {
-        const ais = aiList.getConstructorsByName([
-            params.game.ai1,
-            params.game.ai2
-        ]);
-        this.gameInfo = params.game;
-        this.gameManger.startAIGame(
-            ais[0],
-            ais[1],
-            new DeckList(standardFormat, params.game.deck1),
-            new DeckList(standardFormat, params.game.deck2)
-        );
-        this.playerNumbers = params.game.playerNumbers;
-    }
-}
-
-function assertNever(x: never): never {
-    throw new Error('Unexpected object: ' + x);
 }

@@ -2,7 +2,8 @@ import { openInteractivePrompt } from './tool/interactivePrompt';
 import * as bots from './bots/importBots';
 import { readArgs } from './tool/commandMode';
 import * as cluster from 'cluster';
-import { TournamentManager, TournamentWorker } from './tool/tournamentManager';
+import { TournamentManager } from './tool/tournamentManager';
+import { TournamentWorker } from './tool/tournamentWorker';
 
 // Unhandled promise rejections should throw exceptions
 process.on('unhandledRejection', up => {
