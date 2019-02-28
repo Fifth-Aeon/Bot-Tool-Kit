@@ -1,12 +1,11 @@
 import * as fs from 'fs';
-import { AIConstructor } from '../game_model/ai/aiList';
 import { camelCase, capitalize } from 'lodash';
+import { AIConstructor } from '../game_model/ai/aiList';
+import { deckMap } from '../game_model/scenarios/decks';
 import { BotPackager } from './botPackager';
 import { GameManager } from './gameManager';
-import { deckMap } from '../game_model/scenarios/decks';
-import { TournamentManager } from './tournamentManager';
-import { DeckList } from 'game_model/deckList';
 import { Tournament, TournamentType } from './tournamentDefinition';
+import { TournamentManager } from './tournamentManager';
 
 const packager = new BotPackager();
 const manager = new GameManager();

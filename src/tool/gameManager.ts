@@ -1,16 +1,14 @@
 import * as fs from 'fs';
-import { AIConstructor } from '../game_model/ai/aiList';
-import { DeckList, SavedDeck } from '../game_model/deckList';
-import { Unit } from '../game_model/card-types/unit';
 import { AI } from '../game_model/ai/ai';
+import { AIConstructor } from '../game_model/ai/aiList';
 import { DefaultAI } from '../game_model/ai/defaultAi';
 import { Animator } from '../game_model/animator';
 import { ClientGame } from '../game_model/clientGame';
-import { Game } from '../game_model/game';
+import { DeckList, SavedDeck } from '../game_model/deckList';
+import { GameAction, GameActionType } from '../game_model/events/gameAction';
+import { GameSyncEvent, SyncEventType } from '../game_model/events/syncEvent';
 import { standardFormat } from '../game_model/gameFormat';
 import { ServerGame } from '../game_model/serverGame';
-import { GameSyncEvent, SyncEventType } from '../game_model/events/syncEvent';
-import { GameActionType, GameAction } from '../game_model/events/gameAction';
 
 export interface GameInfo {
     readonly ai1: string;
@@ -21,20 +19,20 @@ export interface GameInfo {
 }
 
 export class GameManager {
-    constructor() {
-        this.reset();
-    }
     private game1: ClientGame | null = null;
     private game2: ClientGame | null = null;
     private gameModel: ServerGame | null = null;
 
     private ais: Array<AI> = [];
-    private aiTick: any;
     private seed = 0;
     public annoucmentsOn = true;
     public exitOnFailure = true;
 
     public onGameEnd: (winner: number) => any = () => null;
+
+    constructor() {
+        this.reset();
+    }
 
     public reset() {
         this.stopAI();
@@ -60,19 +58,6 @@ export class GameManager {
         for (const ai of this.ais) {
             ai.startActingImmediateMode();
         }
-    }
-
-    private printGameEvents(game: Game, num: number) {
-        const events = game
-            .getPastEvents()
-            .slice(game.getPastEvents().length - num);
-
-        console.error();
-        console.error(`Last ${num} ${game.getName()} events`);
-        for (const event of events) {
-            console.error(SyncEventType[event.type], event);
-        }
-        console.error();
     }
 
     // Action communication -------------------------------------
@@ -129,33 +114,12 @@ export class GameManager {
         }
     }
 
-    private summerizeUnit(unit: Unit): String {
-        return `${unit.getId()}: ${unit.getName()} E:${unit.isExhausted()} A: ${unit.canAttack()}`;
-    }
-
-    private printCards(game: Game) {
-        console.error(
-            game.getName(),
-            'Hand 1',
-            game
-                .getPlayer(0)
-                .getHand()
-                .map(card => [
-                    card.getId(),
-                    card.getName(),
-                    card.isPlayable(game)
-                ])
-        );
-    }
-
     private sendGameAction(action: GameAction) {
         if (!this.gameModel || !this.game1 || !this.game2) {
             throw new Error('Gamee not initlized properly');
         }
-        // console.log(playerNumber, 'took', GameActionType[type], 'with', params);
         const res = this.gameModel.handleAction(action);
 
-        // console.log(`AI ${playerNumber} sent action ${GameActionType[type]} with params`, params);
         if (res === null) {
             console.error(
                 'An action sent to game model by',

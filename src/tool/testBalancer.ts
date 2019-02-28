@@ -1,19 +1,14 @@
-import {
-    AutoBalancer,
-    ComprehensiveSearchConfig,
-    BalanceMethods
-} from './autoBalancer';
-import { CardType } from '../game_model/card-types/card';
-import { UnitData, SpellData } from '../game_model/cards/cardList';
-import { decapitate } from '../game_model/cards/decayCards';
-import { allDecks } from '../game_model/scenarios/decks';
-import { UnitType } from '../game_model/card-types/unit';
 import * as cluster from 'cluster';
-import { TournamentManager, TournamentWorker } from './tournamentManager';
-import { DealDamage } from '../game_model/cards/mechanics/dealDamage';
-import { SingleUnit } from '../game_model/cards/targeters/basicTargeter';
-import { Flying, Relentless } from '../game_model/cards/mechanics/skills';
+import { CardType } from '../game_model/card-types/card';
+import { UnitType } from '../game_model/card-types/unit';
+import { SpellData, UnitData } from '../game_model/cards/cardList';
+import { decapitate } from '../game_model/cards/decayCards';
 import { DrawCard } from '../game_model/cards/mechanics/draw';
+import { Flying, Relentless } from '../game_model/cards/mechanics/skills';
+import { allDecks } from '../game_model/scenarios/decks';
+import { AutoBalancer, BalanceMethods, ComprehensiveSearchConfig } from './autoBalancer';
+import { TournamentManager } from './tournamentManager';
+import { TournamentWorker } from './tournamentWorker';
 
 // Unhandled promise rejections should throw exceptions
 process.on('unhandledRejection', up => {

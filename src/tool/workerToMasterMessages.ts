@@ -1,15 +1,23 @@
 import { GameInfo } from './gameManager';
+import { GameAction } from '../game_model/events/gameAction';
 
 export enum WorkerToMasterMessageType {
     Ready,
-    GameResult
+    GameResult,
+    GameAction
 }
 
-export type WorkerToMasterMessage = ReadyMessage | GameResultMessage;
+export type WorkerToMasterMessage = ReadyMessage | GameResultMessage | GameActionMessage;
 
 export interface ReadyMessage {
     readonly type: WorkerToMasterMessageType.Ready;
     readonly id: number;
+}
+
+export interface GameActionMessage {
+    readonly type: WorkerToMasterMessageType.GameAction;
+    readonly id: number;
+    readonly action: GameAction;
 }
 
 interface GameResultMessageBase {

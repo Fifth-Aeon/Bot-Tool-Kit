@@ -174,7 +174,8 @@ export class TournamentManager {
                 }
                 const msg: StartGameMesage = {
                     type: MasterToWorkerMessageType.StartGame,
-                    game: game
+                    game: game,
+                    seperateAiWorkers: false
                 };
                 workerHandle.busy = true;
                 workerHandle.game = msg.game;

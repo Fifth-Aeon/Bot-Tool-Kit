@@ -2,17 +2,13 @@ import * as figlet from 'figlet';
 import * as fs from 'fs';
 import * as inquirer from 'inquirer';
 import * as path from 'path';
-import { createBot, packageBot, runGame, runTournament } from './commands';
 import { AIConstructor, aiList } from '../game_model/ai/aiList';
-import { allDecks } from '../game_model/scenarios/decks';
 import { DefaultAI } from '../game_model/ai/defaultAi';
-import { tournamentLoader } from './tournamentLoader';
-import {
-    TournamentDefinition,
-    Tournament,
-    TournamentType
-} from './tournamentDefinition';
 import { DeckList } from '../game_model/deckList';
+import { allDecks } from '../game_model/scenarios/decks';
+import { createBot, packageBot, runGame, runTournament } from './commands';
+import { Tournament } from './tournamentDefinition';
+import { tournamentLoader } from './tournamentLoader';
 
 const chalk = require('chalk');
 
