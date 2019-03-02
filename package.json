@@ -6,7 +6,7 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "balance": "ts-node src/tool/testBalancer.ts",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "ts-node src/test/test.ts",
     "docs": "typedoc --out docs src/game_model"
   },
   "author": "William Ritson",

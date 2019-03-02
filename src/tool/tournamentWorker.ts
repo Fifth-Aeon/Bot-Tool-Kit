@@ -1,7 +1,7 @@
-import { AI } from 'game_model/ai/ai';
-import { Animator } from 'game_model/animator';
-import { ClientGame } from 'game_model/clientGame';
-import { GameAction } from 'game_model/events/gameAction';
+import { AI } from '../game_model/ai/ai';
+import { Animator } from '../game_model/animator';
+import { ClientGame } from '../game_model/clientGame';
+import { GameAction } from '../game_model/events/gameAction';
 import { aiList } from '../game_model/ai/aiList';
 import { cardList } from '../game_model/cards/cardList';
 import { DeckList } from '../game_model/deckList';
@@ -13,17 +13,20 @@ import {
     MasterToWorkerMessageType,
     StartAiMessage,
     StartGameMesage,
-    SyncMessage
+    SyncMessage,
+    ActionMessage
 } from './masterToWorkerMessages';
 import {
     GameResultMessage,
     ReadyMessage,
     WorkerToMasterMessageType
 } from './workerToMasterMessages';
+import { GameSyncEvent, SyncEventType } from '../game_model/events/syncEvent';
 
 export class TournamentWorker {
     private gameManger?: GameManager;
     private ai?: AI;
+    private useSeprateAi = false;
     private playerNumbers: number[] = [];
     private gameInfo?: GameInfo;
 
@@ -51,17 +54,29 @@ export class TournamentWorker {
             case MasterToWorkerMessageType.AddCard:
                 this.addCardToPool(message);
                 break;
-
             case MasterToWorkerMessageType.SyncMessage:
                 this.syncMessage(message);
+                break;
+            case MasterToWorkerMessageType.ActionMessage:
+                this.syncAction(message);
                 break;
         }
     }
 
+    private syncAction(message: ActionMessage) {
+        if (!this.gameManger) {
+            throw new Error(
+                'Cannot sync action when not configured as game worker'
+            );
+        }
+        this.gameManger.syncAction(message.action);
+    }
+
     private startGameWorker() {
-        this.gameManger = new GameManager();
-        this.gameManger.annoucmentsOn = false;
-        this.gameManger.exitOnFailure = false;
+        const sender = this.useSeprateAi
+            ? this.sendGameMessage
+            : GameManager.noop;
+        this.gameManger = new GameManager(sender);
 
         this.gameManger.onGameEnd = winner => {
             if (!process.send) {
@@ -87,6 +102,17 @@ export class TournamentWorker {
         return this.gameManger;
     }
 
+    private sendGameMessage(event: GameSyncEvent) {
+        if (!process.send) {
+            throw new Error('Cannot send game sync message');
+        }
+        process.send({
+            type: WorkerToMasterMessageType.GameEvent,
+            id: process.pid,
+            event: event
+        });
+    }
+
     private addCardToPool(params: AddCardMessage) {
         cardList.addFactory(cardList.buildCardFactory(params.cardData));
     }
@@ -95,16 +121,11 @@ export class TournamentWorker {
         if (!this.ai) {
             throw new Error();
         }
-        for (const event of params.events) {
-            this.ai.handleGameEvent(event);
+        if (params.event.type === SyncEventType.PriortyGained) {
+            this.ai.onGainPriority();
+        } else {
+            this.ai.handleGameEvent(params.event);
         }
-    }
-
-    private syncPriorityChange() {
-        if (!this.ai) {
-            throw new Error();
-        }
-        this.ai.onGainPriority();
     }
 
     private startAi(params: StartAiMessage) {

@@ -1,10 +1,9 @@
-import { openInteractivePrompt } from './tool/interactivePrompt';
-import * as bots from './bots/importBots';
-import { readArgs } from './tool/commandMode';
 import * as cluster from 'cluster';
-import { TournamentManager, TournamentWorker } from './tool/tournamentManager';
-import { runTournament } from './tool/commands';
-import { tournamentLoader } from './tool/tournamentLoader';
+import * as bots from '../bots/importBots';
+import { runTournament } from '../tool/commands';
+import { tournamentLoader } from '../tool/tournamentLoader';
+import { TournamentManager } from '../tool/tournamentManager';
+import { TournamentWorker } from '../tool/tournamentWorker';
 
 // Unhandled promise rejections should throw exceptions
 process.on('unhandledRejection', up => {
@@ -12,8 +11,8 @@ process.on('unhandledRejection', up => {
 });
 
 if (cluster.isMaster) {
-    const numWorkers = require('os').cpus().length - 1;
-    const manager = TournamentManager.getInstance();
+    const numWorkers = Math.floor(require('os').cpus().length / 3) * 3;
+    const manager = TournamentManager.getInstance(10000, true);
 
     console.warn('create', numWorkers, 'workers');
     for (let i = 0; i < numWorkers; i++) {

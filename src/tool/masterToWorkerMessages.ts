@@ -2,25 +2,33 @@ import { SavedDeck } from 'game_model/deckList';
 import { GameSyncEvent } from 'game_model/events/syncEvent';
 import { CardData } from '../game_model/cards/cardList';
 import { GameInfo } from './gameManager';
+import { GameAction } from '../game_model/events/gameAction';
 
 export enum MasterToWorkerMessageType {
     StartAI,
     StartGame,
     AddCard,
     Timeout,
-    SyncMessage
+    SyncMessage,
+    ActionMessage
 }
 
 export type MasterToWorkerMessage =
     | SyncMessage
+    | ActionMessage
     | StartAiMessage
     | StartGameMesage
     | AddCardMessage
     | TimeoutMessage;
 
+export interface ActionMessage {
+    readonly type: MasterToWorkerMessageType.ActionMessage;
+    readonly action: GameAction;
+}
+
 export interface SyncMessage {
     readonly type: MasterToWorkerMessageType.SyncMessage;
-    readonly events: GameSyncEvent[];
+    readonly event: GameSyncEvent;
 }
 
 export interface StartAiMessage {

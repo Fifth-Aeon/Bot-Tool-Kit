@@ -10,7 +10,8 @@ import {
     AddCardMessage,
     MasterToWorkerMessage,
     MasterToWorkerMessageType,
-    StartGameMesage
+    StartGameMesage,
+    StartAiMessage
 } from './masterToWorkerMessages';
 import {
     ConstructedTournament,
@@ -19,66 +20,86 @@ import {
 } from './tournamentDefinition';
 import {
     WorkerToMasterMessage,
-    WorkerToMasterMessageType
+    WorkerToMasterMessageType,
+    GameResultMessage,
+    ReadyMessage,
+    GameEventMessage,
+    GameActionMessage
 } from './workerToMasterMessages';
 
 interface WorkerHandle {
     readonly worker: cluster.Worker;
+    isAi: boolean;
     runtime: number;
     busy: boolean;
     game: GameInfo | undefined;
 }
 
 export class TournamentManager {
-    constructor(private timeLimit: number) {
-        if (TournamentManager.instance !== undefined) {
-            throw new Error('May only have one tournament manager singleton');
-        }
-        const checkTimeoutInterval = 500;
-        setInterval(() => {
-            for (const workerHandle of Array.from(this.workers.values())) {
-                if (workerHandle.busy) {
-                    workerHandle.runtime += checkTimeoutInterval;
-                }
-                if (workerHandle.runtime >= this.timeLimit) {
-                    console.warn(
-                        `Worker ${workerHandle.worker.id}:${
-                            workerHandle.worker.process.pid
-                        } timed out. Killing it.`
-                    );
-                    workerHandle.worker.kill();
-                    if (workerHandle.game) {
-                        this.gameQueue.push(workerHandle.game);
-                        console.warn(
-                            `(it was ${workerHandle.game.deck1.name} vs ${
-                                workerHandle.game.deck2.name
-                            })`
-                        );
-                    } else {
-                        this.gameCount--;
-                    }
-                    this.workers.delete(workerHandle.worker.process.pid);
-                    this.createWorker();
-                }
-            }
-        }, checkTimeoutInterval);
-    }
     static instance: TournamentManager;
+    private static checkTimeoutInterval = 500;
 
     private gameQueue: GameInfo[] = [];
     private workers: Map<number, WorkerHandle> = new Map();
+    private associatedGameWorker: Map<number, cluster.Worker> = new Map();
+    private associatedAiWorkers: Map<
+        number,
+        [cluster.Worker, cluster.Worker]
+    > = new Map();
     private newCards: Array<CardData> = [];
     private gameCount = 0;
     private results: number[] = [];
 
-    public static getInstance(timeLimit: number = 30000) {
+    public static getInstance(
+        timeLimit: number = 30000,
+        isolateAi: boolean = true
+    ) {
         if (!this.instance) {
-            this.instance = new TournamentManager(timeLimit);
+            this.instance = new TournamentManager(timeLimit, isolateAi);
         }
         return this.instance;
     }
 
     private onTournamentEnd: () => any = () => null;
+
+    constructor(private timeLimit: number, private isolateAi: boolean = true) {
+        if (TournamentManager.instance !== undefined) {
+            throw new Error('May only have one tournament manager singleton');
+        }
+
+        setInterval(
+            this.checkTimeout.bind(this),
+            TournamentManager.checkTimeoutInterval
+        );
+    }
+
+    private checkTimeout() {
+        for (const workerHandle of Array.from(this.workers.values())) {
+            if (workerHandle.busy) {
+                workerHandle.runtime += TournamentManager.checkTimeoutInterval;
+            }
+            if (workerHandle.runtime >= this.timeLimit) {
+                console.warn(
+                    `Worker ${workerHandle.worker.id}:${
+                        workerHandle.worker.process.pid
+                    } timed out. Killing it.`
+                );
+                workerHandle.worker.kill();
+                if (workerHandle.game) {
+                    this.gameQueue.push(workerHandle.game);
+                    console.warn(
+                        `(it was ${workerHandle.game.deck1.name} vs ${
+                            workerHandle.game.deck2.name
+                        })`
+                    );
+                } else {
+                    this.gameCount--;
+                }
+                this.workers.delete(workerHandle.worker.process.pid);
+                this.createWorker();
+            }
+        }
+    }
 
     public async createWorker() {
         const worker = cluster.fork();
@@ -88,29 +109,19 @@ export class TournamentManager {
             this.sendCardToWorker(card, worker);
         }
         worker.on('message', (msg: WorkerToMasterMessage) => {
-            if (msg.type === WorkerToMasterMessageType.GameResult) {
-                if (msg.error === true) {
-                    console.warn(
-                        'got error result, requing',
-                        msg.game.deck1,
-                        'vs',
-                        msg.game.deck2
-                    );
-                    this.gameQueue.push(msg.game);
-                } else {
-                    this.writeResult(msg.winner, msg.id);
-                }
-            } else {
-                console.warn('worker', msg.id, 'is ready');
-                this.workers.set(msg.id, {
-                    busy: false,
-                    runtime: 0,
-                    worker: worker,
-                    game: undefined
-                });
-                if (this.gameCount > 0) {
-                    this.startGame();
-                }
+            switch (msg.type) {
+                case WorkerToMasterMessageType.GameResult:
+                    this.reciveGameResult(msg);
+                    break;
+                case WorkerToMasterMessageType.Ready:
+                    this.reciveReadyMsg(msg, worker);
+                    break;
+                case WorkerToMasterMessageType.GameAction:
+                    this.forwardGameAction(msg, worker.id);
+                    break;
+                case WorkerToMasterMessageType.GameEvent:
+                    this.forwardGameEvent(msg, worker.id);
+                    break;
             }
         });
         worker.on('disconnect', () => {
@@ -124,6 +135,58 @@ export class TournamentManager {
                 this.createWorker();
             }
         });
+    }
+
+    private forwardGameEvent(msg: GameEventMessage, id: number) {
+        const aiWorkers = this.associatedAiWorkers.get(id);
+        if (!aiWorkers) {
+            throw new Error(`No ai workers associated with id ${id}.`);
+        }
+        for (const worker of aiWorkers) {
+            this.sendMessageToWorker(worker, {
+                type: MasterToWorkerMessageType.SyncMessage,
+                event: msg.event
+            });
+        }
+    }
+
+    private forwardGameAction(msg: GameActionMessage, id: number) {
+        const gameWorker = this.associatedGameWorker.get(id);
+        if (!gameWorker) {
+            throw new Error(`No game worker associated with id ${id}.`);
+        }
+        this.sendMessageToWorker(gameWorker, {
+            type: MasterToWorkerMessageType.ActionMessage,
+            action: msg.action
+        });
+    }
+
+    private reciveGameResult(msg: GameResultMessage) {
+        if (msg.error === true) {
+            console.warn(
+                'got error result, requing',
+                msg.game.deck1,
+                'vs',
+                msg.game.deck2
+            );
+            this.gameQueue.push(msg.game);
+        } else {
+            this.writeResult(msg.winner, msg.id);
+        }
+    }
+
+    private reciveReadyMsg(msg: ReadyMessage, worker: cluster.Worker) {
+        console.warn('worker', msg.id, 'is ready');
+        this.workers.set(msg.id, {
+            isAi: true,
+            busy: false,
+            runtime: 0,
+            worker: worker,
+            game: undefined
+        });
+        if (this.gameCount > 0) {
+            this.startGame();
+        }
     }
 
     private reset() {
@@ -165,22 +228,95 @@ export class TournamentManager {
         this.gameCount++;
     }
 
-    private startGame() {
+    private getFreeWorker() {
         for (const workerHandle of Array.from(this.workers.values())) {
             if (!workerHandle.busy && workerHandle.worker.process.connected) {
-                const game = this.gameQueue.pop();
-                if (!game) {
-                    return;
-                }
-                const msg: StartGameMesage = {
-                    type: MasterToWorkerMessageType.StartGame,
-                    game: game,
-                    seperateAiWorkers: false
-                };
-                workerHandle.busy = true;
-                workerHandle.game = msg.game;
-                workerHandle.worker.send(msg);
+                return workerHandle;
             }
+        }
+    }
+
+    private getFreeWorkerGroup() {
+        const workers = [];
+        for (const workerHandle of Array.from(this.workers.values())) {
+            if (!workerHandle.busy && workerHandle.worker.process.connected) {
+                workers.push(workerHandle);
+            }
+        }
+        if (workers.length >= 3) {
+            return workers;
+        }
+    }
+
+    private startGame() {
+        if (this.isolateAi) {
+            const workers = this.getFreeWorkerGroup();
+            if (!workers) {
+                return;
+            }
+            const game = this.gameQueue.pop();
+            if (!game) {
+                return;
+            }
+            const gameWorker = workers[0];
+            const aiWorker1 = workers[1];
+            const aiWorker2 = workers[2];
+
+            gameWorker.busy = true;
+            gameWorker.game = game;
+            gameWorker.worker.send({
+                type: MasterToWorkerMessageType.StartGame,
+                game: game,
+                seperateAiWorkers: true
+            } as StartGameMesage);
+
+            aiWorker1.busy = true;
+            aiWorker1.isAi = true;
+            aiWorker1.worker.send({
+                type: MasterToWorkerMessageType.StartAI,
+                aiName: game.ai1,
+                deck: game.deck1,
+                playerNumber: 0
+            } as StartAiMessage);
+
+            aiWorker2.busy = true;
+            aiWorker2.isAi = true;
+            aiWorker2.worker.send({
+                type: MasterToWorkerMessageType.StartAI,
+                aiName: game.ai2,
+                deck: game.deck2,
+                playerNumber: 1
+            } as StartAiMessage);
+
+            this.associatedGameWorker.set(
+                aiWorker1.worker.id,
+                gameWorker.worker
+            );
+            this.associatedGameWorker.set(
+                aiWorker2.worker.id,
+                gameWorker.worker
+            );
+            this.associatedAiWorkers.set(gameWorker.worker.id, [
+                aiWorker1.worker,
+                aiWorker2.worker
+            ]);
+        } else {
+            const worker = this.getFreeWorker();
+            if (!worker) {
+                return;
+            }
+            const game = this.gameQueue.pop();
+            if (!game) {
+                return;
+            }
+            const msg: StartGameMesage = {
+                type: MasterToWorkerMessageType.StartGame,
+                game: game,
+                seperateAiWorkers: false
+            };
+            worker.busy = true;
+            worker.game = msg.game;
+            worker.worker.send(msg);
         }
     }
 
@@ -236,13 +372,7 @@ export class TournamentManager {
                 }
             }
         }
-        for (let i = 0; i < this.workers.size; i++) {
-            this.startGame();
-        }
-        await new Promise(resolve => {
-            this.onTournamentEnd = () => resolve();
-        });
-        return this.buildScores();
+        this.startTournament();
     }
 
     public async runConstructedTournament(tournament: ConstructedTournament) {

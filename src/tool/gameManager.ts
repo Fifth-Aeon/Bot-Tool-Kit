@@ -25,13 +25,27 @@ export class GameManager {
 
     private ais: Array<AI> = [];
     private seed = 0;
-    public annoucmentsOn = true;
-    public exitOnFailure = true;
+    private useSeperateAi = false;
 
+    public static readonly noop = () => null;
     public onGameEnd: (winner: number) => any = () => null;
 
-    constructor() {
+    constructor(
+        private sendMessage: (msg: GameSyncEvent) => any = GameManager.noop,
+        private annoucmentsOn = false,
+        private exitOnFailure = true
+    ) {
+        if (sendMessage === GameManager.noop) {
+            this.sendMessage = () => null;
+            this.useSeperateAi = false;
+        } else {
+            this.useSeperateAi = true;
+        }
         this.reset();
+    }
+
+    public syncAction(action: GameAction) {
+        this.sendGameAction(action);
     }
 
     public reset() {
@@ -61,6 +75,20 @@ export class GameManager {
     }
 
     // Action communication -------------------------------------
+    private sendEventsToPlayers(events: GameSyncEvent[]) {
+        if (this.useSeperateAi) {
+            this.sendEventToRemovePlayers(events);
+        } else {
+            this.sendEventsToLocalPlayers(events);
+        }
+    }
+    sendEventToRemovePlayers(events: GameSyncEvent[]): any {
+        for (const event of events) {
+            this.sendMessage(event);
+            this.watchGame(event);
+        }
+    }
+
     private sendEventsToLocalPlayers(events: GameSyncEvent[]) {
         setTimeout(() => {
             for (const event of events) {
@@ -90,7 +118,14 @@ export class GameManager {
             event.type === SyncEventType.PhaseChange ||
             event.type === SyncEventType.ChoiceMade
         ) {
-            this.ais[this.gameModel.getActivePlayer()].onGainPriority();
+            if (this.useSeperateAi) {
+                this.sendMessage({
+                    type: SyncEventType.PriortyGained,
+                    player: this.gameModel.getActivePlayer()
+                });
+            } else {
+                this.ais[this.gameModel.getActivePlayer()].onGainPriority();
+            }
         }
     }
 
@@ -116,7 +151,7 @@ export class GameManager {
 
     private sendGameAction(action: GameAction) {
         if (!this.gameModel || !this.game1 || !this.game2) {
-            throw new Error('Gamee not initlized properly');
+            throw new Error('Game not initlized properly');
         }
         const res = this.gameModel.handleAction(action);
 
@@ -134,7 +169,7 @@ export class GameManager {
 
             return;
         }
-        this.sendEventsToLocalPlayers(res);
+        this.sendEventsToPlayers(res);
     }
 
     public isInputEnabled() {
@@ -203,20 +238,22 @@ export class GameManager {
             deck1,
             deck2
         ]);
-        this.game1 = new ClientGame(
-            'A.I - 1',
-            (_, action) => this.sendGameAction(action),
-            animator
-        );
-        this.game2 = new ClientGame(
-            'A.I - 2',
-            (_, action) => this.sendGameAction(action),
-            animator
-        );
+        if (!this.useSeperateAi) {
+            this.game1 = new ClientGame(
+                'A.I - 1',
+                (_, action) => this.sendGameAction(action),
+                animator
+            );
+            this.game2 = new ClientGame(
+                'A.I - 2',
+                (_, action) => this.sendGameAction(action),
+                animator
+            );
 
-        this.ais.push(new ai1(0, this.game1, deck1));
-        this.ais.push(new ai2(1, this.game2, deck2));
-        this.sendEventsToLocalPlayers(this.gameModel.startGame());
+            this.ais.push(new ai1(0, this.game1, deck1));
+            this.ais.push(new ai2(1, this.game2, deck2));
+        }
+        this.sendEventsToPlayers(this.gameModel.startGame());
         this.startAiInDelayMode(1, animator);
     }
 }
