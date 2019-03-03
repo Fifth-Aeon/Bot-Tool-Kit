@@ -41,10 +41,10 @@ export class TournamentManager {
 
     private gameQueue: GameInfo[] = [];
     private workers: Map<number, WorkerHandle> = new Map();
-    private associatedGameWorker: Map<number, cluster.Worker> = new Map();
+    private associatedGameWorker: Map<number, WorkerHandle> = new Map();
     private associatedAiWorkers: Map<
         number,
-        [cluster.Worker, cluster.Worker]
+        [WorkerHandle, WorkerHandle]
     > = new Map();
     private newCards: Array<CardData> = [];
     private gameCount = 0;
@@ -142,8 +142,8 @@ export class TournamentManager {
         if (!aiWorkers) {
             throw new Error(`No ai workers associated with id ${id}.`);
         }
-        for (const worker of aiWorkers) {
-            this.sendMessageToWorker(worker, {
+        for (const workerHandle of aiWorkers) {
+            this.sendMessageToWorker(workerHandle.worker, {
                 type: MasterToWorkerMessageType.SyncMessage,
                 event: msg.event
             });
@@ -155,7 +155,7 @@ export class TournamentManager {
         if (!gameWorker) {
             throw new Error(`No game worker associated with id ${id}.`);
         }
-        this.sendMessageToWorker(gameWorker, {
+        this.sendMessageToWorker(gameWorker.worker, {
             type: MasterToWorkerMessageType.ActionMessage,
             action: msg.action
         });
@@ -207,6 +207,16 @@ export class TournamentManager {
             }
             worker.busy = false;
             worker.runtime = 0;
+            if (this.isolateAi) {
+                const ais = this.associatedAiWorkers.get(worker.worker.id);
+                if (!ais) {
+                    throw new Error('Could not find A.I workers for ending game');
+                }
+                for (const aiHandle of ais) {
+                    aiHandle.busy = false;
+                    aiHandle.runtime = 0;
+                }
+            }
             this.startGame();
         }
     }
@@ -290,15 +300,14 @@ export class TournamentManager {
 
             this.associatedGameWorker.set(
                 aiWorker1.worker.id,
-                gameWorker.worker
-            );
+                gameWorker            );
             this.associatedGameWorker.set(
                 aiWorker2.worker.id,
-                gameWorker.worker
+                gameWorker
             );
             this.associatedAiWorkers.set(gameWorker.worker.id, [
-                aiWorker1.worker,
-                aiWorker2.worker
+                aiWorker1,
+                aiWorker2
             ]);
         } else {
             const worker = this.getFreeWorker();
