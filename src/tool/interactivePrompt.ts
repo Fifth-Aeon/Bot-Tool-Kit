@@ -39,10 +39,10 @@ const askForCommand = async () => {
             message: 'What would you like to do?',
             choices: [
                 options.tournament,
-                options.tournamentDef,
-                options.game,
+                // options.tournamentDef,
+                // options.game,
                 options.create,
-                options.package
+                // options.package
             ]
         }
     ]);

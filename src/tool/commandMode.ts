@@ -4,9 +4,11 @@ import { aiList } from '../game_model/ai/aiList';
 import { tournamentLoader } from './tournamentLoader';
 
 export function readArgs() {
+    /*
     commander
         .command('game <bot1> <deck1> <bot2> <deck2>')
         .description('Runs a game between the given A.Is with the given decks');
+        */
 
     commander
         .command('tournament <aiNames> <deckNames> <numberOfGames>')
@@ -19,11 +21,13 @@ export function readArgs() {
         .command('create <name>')
         .description('Creates a new bot with the given name.');
 
+        /*
     commander
         .command('package <botfile>')
         .description(
             'Packages a bot in the given file into a distributable form.'
         );
+        */
 
     commander.parse(process.argv);
 
@@ -40,9 +44,6 @@ export function readArgs() {
         case 'tournament':
             parseTournamentArgs(
                 commander.args[1],
-                commander.args[2],
-                commander.args[3],
-                commander.args[4] || 'false'
             );
             break;
         case 'create':
@@ -55,16 +56,9 @@ export function readArgs() {
 }
 
 function parseTournamentArgs(
-    aiNames: string,
-    deckNames: string,
-    numberOfGames: string,
-    mirror: string
+    definitonName: string
 ) {
-    const constructors = aiList.getConstructorsByName(aiNames.split(','));
-    const decks = tournamentLoader.getDecksByName(deckNames.split(','));
-    const gameCount = parseInt(numberOfGames, 10);
-    const mirrorMode = mirror === 'true' ? true : false;
-    // runTournament(constructors, decks, mirrorMode, gameCount);
+    runTournament(tournamentLoader.getTournamentByName(definitonName));
 }
 
 function parseGameArgs(
