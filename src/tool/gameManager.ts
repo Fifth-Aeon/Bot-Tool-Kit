@@ -26,6 +26,9 @@ export class GameManager {
     private ais: Array<AI> = [];
     private seed = 0;
     private useSeperateAi = false;
+    private aiTime = 3000;
+
+    private timeoutTimer: any;
 
     public static readonly noop = () => null;
     public onGameEnd: (winner: number) => any = () => null;
@@ -33,7 +36,7 @@ export class GameManager {
     constructor(
         private sendMessage: (msg: GameSyncEvent) => any = GameManager.noop,
         private annoucmentsOn = false,
-        private exitOnFailure = true
+        private exitOnFailure = false
     ) {
         if (sendMessage === GameManager.noop) {
             this.sendMessage = () => null;
@@ -82,10 +85,14 @@ export class GameManager {
             this.sendEventsToLocalPlayers(events);
         }
     }
-    sendEventToRemovePlayers(events: GameSyncEvent[]): any {
+
+    private sendEventToRemovePlayers(events: GameSyncEvent[]): any {
         for (const event of events) {
             this.sendMessage(event);
             this.watchGame(event);
+            if (event.type === SyncEventType.Ended) {
+                return;
+            }
         }
     }
 
@@ -108,7 +115,7 @@ export class GameManager {
 
     private checkPriorityChange(event: GameSyncEvent) {
         if (!this.gameModel) {
-            throw new Error('Gamee not initlized properly');
+            throw new Error('Cannot checkPriorityChange game not initilized.');
         }
         if (!this.gameModel.canTakeAction()) {
             return;
@@ -119,6 +126,7 @@ export class GameManager {
             event.type === SyncEventType.ChoiceMade
         ) {
             if (this.useSeperateAi) {
+                this.startAiTimer();
                 this.sendMessage({
                     type: SyncEventType.PriortyGained,
                     player: this.gameModel.getActivePlayer()
@@ -126,6 +134,26 @@ export class GameManager {
             } else {
                 this.ais[this.gameModel.getActivePlayer()].onGainPriority();
             }
+        }
+    }
+
+    private startAiTimer() {
+        if (this.timeoutTimer) {
+            clearTimeout(this.timeoutTimer);
+        }
+        this.timeoutTimer = setTimeout(() => this.timeoutAI(), this.aiTime);
+    }
+
+    private timeoutAI() {
+        if (this.gameModel) {
+            const responsible = this.gameModel.getResponsiblePlayer();
+            const winner = this.gameModel.getOtherPlayerNumber(responsible);
+            this.sendMessage({
+                type: SyncEventType.Ended,
+                winner: this.gameModel.getOtherPlayerNumber(responsible),
+                quit: true
+            });
+            this.endGame(winner);
         }
     }
 
@@ -150,22 +178,34 @@ export class GameManager {
     }
 
     private sendGameAction(action: GameAction) {
-        if (!this.gameModel || !this.game1 || !this.game2) {
-            throw new Error('Game not initlized properly');
+        if (!this.gameModel) {
+            throw new Error('Cannot sendGameAction game not initilized.');
         }
+
+        let time = 0;
+        const testInterval = setInterval(() => {
+            time += 3000;
+            console.log('Boy this is taking a long time', time, action);
+        }, 3000);
         const res = this.gameModel.handleAction(action);
+        clearInterval(testInterval);
 
         if (res === null) {
             console.error(
-                'An action sent to game model by',
                 action.player,
-                'failed. It was',
+                'is disqualified because they sent an illegal action. It was',
                 GameActionType[action.type],
                 'with',
                 action
             );
 
-            this.onFailure();
+            const winner = this.gameModel.getOtherPlayerNumber(action.player);
+            this.sendMessage({
+                type: SyncEventType.Ended,
+                winner: winner,
+                quit: true
+            });
+            this.endGame(winner);
 
             return;
         }
@@ -252,6 +292,7 @@ export class GameManager {
 
             this.ais.push(new ai1(0, this.game1, deck1));
             this.ais.push(new ai2(1, this.game2, deck2));
+            this.startAiTimer();
         }
         this.sendEventsToPlayers(this.gameModel.startGame());
         this.startAiInDelayMode(1, animator);

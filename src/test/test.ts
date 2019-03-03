@@ -11,7 +11,7 @@ process.on('unhandledRejection', up => {
 });
 
 if (cluster.isMaster) {
-    const numWorkers = Math.floor(require('os').cpus().length / 3) * 3;
+    const numWorkers =  Math.floor(require('os').cpus().length / 3) * 3;
     const manager = TournamentManager.getInstance(10000, true);
 
     console.warn('create', numWorkers, 'workers');

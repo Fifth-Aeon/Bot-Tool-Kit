@@ -26,9 +26,12 @@ import { GameSyncEvent, SyncEventType } from '../game_model/events/syncEvent';
 export class TournamentWorker {
     private gameManger?: GameManager;
     private ai?: AI;
+    private aiActive = false;
     private useSeprateAi = false;
     private playerNumbers: number[] = [];
     private gameInfo?: GameInfo;
+    private msgQueue: GameSyncEvent[] = [];
+    private ended = false;
 
     constructor() {
         process.on('message', (msg: MasterToWorkerMessage) =>
@@ -55,7 +58,7 @@ export class TournamentWorker {
                 this.addCardToPool(message);
                 break;
             case MasterToWorkerMessageType.SyncMessage:
-                this.syncMessage(message);
+                this.syncMessage(message.event);
                 break;
             case MasterToWorkerMessageType.ActionMessage:
                 this.syncAction(message);
@@ -117,18 +120,42 @@ export class TournamentWorker {
         cardList.addFactory(cardList.buildCardFactory(params.cardData));
     }
 
-    private syncMessage(params: SyncMessage) {
+    private syncMessage(event: GameSyncEvent) {
         if (!this.ai) {
             throw new Error();
         }
-        if (params.event.type === SyncEventType.PriortyGained) {
-            this.ai.onGainPriority();
+        if (this.ended) {
+            this.msgQueue.push(event);
+            return;
+        }
+        if (event.type === SyncEventType.Ended) {
+            this.ended = true;
+            return;
+        }
+
+        if (event.type === SyncEventType.PriortyGained) {
+            if (
+                this.aiActive &&
+                event.player === this.ai.getPlayerNumber()
+            ) {
+                this.ai.onGainPriority();
+            }
         } else {
-            this.ai.handleGameEvent(params.event);
+            this.ai.handleGameEvent(event);
+        }
+
+        if (!this.aiActive && event.type === SyncEventType.TurnStart) {
+            this.aiActive = true;
+            this.ai.startActingDelayMode(25, new Animator(0.0001));
         }
     }
 
     private startAi(params: StartAiMessage) {
+        if (this.ai) {
+            this.ai.stopActing();
+        }
+        this.gameManger = undefined;
+
         const constructor = aiList.getConstructorByName(params.aiName);
         const deck = new DeckList(standardFormat, params.deck);
         const animator = new Animator(0.0001);
@@ -138,7 +165,13 @@ export class TournamentWorker {
             animator
         );
         this.ai = new constructor(params.playerNumber, game, deck);
-        this.ai.startActingDelayMode(1, animator);
+        this.aiActive = false;
+        this.ended = false;
+
+        for (const msg of this.msgQueue) {
+            this.syncMessage(msg);
+        }
+        this.msgQueue = [];
     }
 
     private sendGameAction(action: GameAction) {
@@ -153,6 +186,7 @@ export class TournamentWorker {
     }
 
     private startGame(params: StartGameMesage) {
+        this.useSeprateAi = params.seperateAiWorkers;
         if (!this.gameManger) {
             this.gameManger = this.startGameWorker();
         }

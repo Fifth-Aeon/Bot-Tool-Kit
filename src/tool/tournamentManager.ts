@@ -46,7 +46,7 @@ export class TournamentManager {
         number,
         [WorkerHandle, WorkerHandle]
     > = new Map();
-    private newCards: Array<CardData> = [];
+    private newCards: CardData[] = [];
     private gameCount = 0;
     private results: number[] = [];
 
@@ -67,10 +67,12 @@ export class TournamentManager {
             throw new Error('May only have one tournament manager singleton');
         }
 
-        setInterval(
-            this.checkTimeout.bind(this),
-            TournamentManager.checkTimeoutInterval
-        );
+        if (!this.isolateAi) {
+            setInterval(
+                this.checkTimeout.bind(this),
+                TournamentManager.checkTimeoutInterval
+            );
+        }
     }
 
     private checkTimeout() {
@@ -163,12 +165,7 @@ export class TournamentManager {
 
     private reciveGameResult(msg: GameResultMessage) {
         if (msg.error === true) {
-            console.warn(
-                'got error result, requing',
-                msg.game.deck1,
-                'vs',
-                msg.game.deck2
-            );
+            console.warn('got error result, requing');
             this.gameQueue.push(msg.game);
         } else {
             this.writeResult(msg.winner, msg.id);
@@ -210,7 +207,9 @@ export class TournamentManager {
             if (this.isolateAi) {
                 const ais = this.associatedAiWorkers.get(worker.worker.id);
                 if (!ais) {
-                    throw new Error('Could not find A.I workers for ending game');
+                    throw new Error(
+                        'Could not find A.I workers for ending game'
+                    );
                 }
                 for (const aiHandle of ais) {
                     aiHandle.busy = false;
@@ -298,13 +297,8 @@ export class TournamentManager {
                 playerNumber: 1
             } as StartAiMessage);
 
-            this.associatedGameWorker.set(
-                aiWorker1.worker.id,
-                gameWorker            );
-            this.associatedGameWorker.set(
-                aiWorker2.worker.id,
-                gameWorker
-            );
+            this.associatedGameWorker.set(aiWorker1.worker.id, gameWorker);
+            this.associatedGameWorker.set(aiWorker2.worker.id, gameWorker);
             this.associatedAiWorkers.set(gameWorker.worker.id, [
                 aiWorker1,
                 aiWorker2
