@@ -38,6 +38,8 @@ export class ${typename} extends DefaultAI {
         `import { ${typename} } from './${identifier}';
 aiList.registerConstructor(${typename});\n\n`
     );
+
+    process.exit(0);
 };
 
 const loadDecks = (deckNames: string[]) => {
