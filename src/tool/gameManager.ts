@@ -147,10 +147,11 @@ export class GameManager {
     private timeoutAI() {
         if (this.gameModel) {
             const responsible = this.gameModel.getResponsiblePlayer();
+            console.warn('A.I', responsible, 'looses because they took too long to pass priority');
             const winner = this.gameModel.getOtherPlayerNumber(responsible);
             this.sendMessage({
                 type: SyncEventType.Ended,
-                winner: this.gameModel.getOtherPlayerNumber(responsible),
+                winner: winner,
                 quit: true
             });
             this.endGame(winner);
@@ -179,17 +180,12 @@ export class GameManager {
 
     private sendGameAction(action: GameAction) {
         if (!this.gameModel) {
-            throw new Error('Cannot sendGameAction game not initilized.');
+            console.error('Cannot sendGameAction game not initilized.');
+            return;
         }
 
-        let time = 0;
-        const testInterval = setInterval(() => {
-            time += 3000;
-            console.log('Boy this is taking a long time', time, action);
-        }, 3000);
-        const res = this.gameModel.handleAction(action);
-        clearInterval(testInterval);
 
+        const res = this.gameModel.handleAction(action);
         if (res === null) {
             console.error(
                 action.player,

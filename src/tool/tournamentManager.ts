@@ -173,7 +173,6 @@ export class TournamentManager {
     }
 
     private reciveReadyMsg(msg: ReadyMessage, worker: cluster.Worker) {
-        console.warn('worker', msg.id, 'is ready');
         this.workers.set(msg.id, {
             isAi: true,
             busy: false,
