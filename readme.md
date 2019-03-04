@@ -8,6 +8,7 @@ This repository contains a command line tool intended to make it easier to produ
 4. Navigate to your newly created bot in the src/bots folder.
 5. Start working on implementing your bot. A great place to start is by looking at the documentation and source code for [DefaultAI](https://docs.fifthaeon.com/classes/_ai_defaultai_.defaultai.html).
 6. Get help and help others by contributing to the [wiki](https://github.com/Fifth-Aeon/Fifth-Aeon-Wiki/wiki) or chatting on the [discord](https://discord.gg/QHqDae2).
+7. To test an A.I run the tool than select run tournament. Then select the Standard Preconstructed option.
 
 ### Installation
 1. Clone the repository with submodules using the command `git clone --recurse-submodules https://github.com/FifthAeon/Bot-Tool-Kit.git` (if you don't already have git you can get it [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git))
@@ -15,3 +16,13 @@ This repository contains a command line tool intended to make it easier to produ
 3. Navigate your terminal into the folder you cloned the repository into and run `npm install` to get the dependencies
 4. Run `npm start` to start the tool.
 5. (Optional) I recommend using [Visual Studio Code](https://code.visualstudio.com/) as an editor. If you want to follow the style of the default code install the [TSLint](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-typescript-tslint-plugin) extension.
+
+### Testing Decks
+You can play with any of the decks the A.I uses in preconstructed tournaments. This may clarify the decks and devising strategies.
+1. Go to fifthaeon.com then go to settings and the dev tab. Click "Unlock Cards".
+2. Go into the folder data/decks and open one of the JSON files, copy paste its content.
+3. Select play vs A.I then in the deck selection screen, select new deck.
+4. Edit the new deck
+5. Select the 3 dots next to the trash icon, then select import deck.
+6. Copy paste the JSON.
+7. Click ok and the deck will be imported. You can now use it to play against DefaultAI or in multiplayer.
