@@ -1,0 +1,18 @@
+{
+    "name": "Lifegain",
+    "avatar": "sun.png",
+    "customMetadata": true,
+    "records": [
+        ["VampireBat", 4],
+        ["CruelTyrant", 4],
+        ["Decapitate", 4],
+        ["RuralMonk", 4],
+        ["Dove", 4],
+        ["Imprison", 4],
+        ["OverwhelmingRadiance", 2],
+        ["AncientSage", 4],
+        ["Monastery", 4],
+        ["CallOfJustice", 4],
+        ["Hemorrhage", 2]
+    ]
+}

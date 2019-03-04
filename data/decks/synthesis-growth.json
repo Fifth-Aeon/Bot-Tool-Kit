@@ -1,0 +1,20 @@
+{
+    "name": "Robotic Plague",
+    "avatar": "virus.png",
+    "customMetadata": true,
+    "records": [
+        ["Workbot", 4],
+        ["DeadlyPlague", 4],
+        ["NaturesBounty", 4],
+        ["Flourishing", 4],
+        ["TitanMk2", 4],
+        ["Paragon", 4],
+        ["Golem", 4],
+        ["ForceField", 2],
+        ["ResearchAI", 2],
+        ["AtomicStrike", 1],
+        ["AssemblyLine", 4],
+        ["Insight", 2],
+        ["RiftBlast", 1]
+    ]
+}

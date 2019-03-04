@@ -113,11 +113,6 @@ class TournamentLoader {
 
     private readAllDecks() {
         const files = this.getJsonFiles(TournamentLoader.deckDataPath);
-
-        for (const deck of allDecks) {
-            this.decks.set(deck.name, deck);
-        }
-
         for (const file of files) {
             const fileData = JSON.parse(
                 fs.readFileSync(file).toString()

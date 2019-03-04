@@ -1,0 +1,21 @@
+{
+    "name": "Ancient Giants",
+    "avatar": "hydra.png",
+    "customMetadata": true,
+    "records": [
+        ["Dragon", 4],
+        ["Hydra", 4],
+        ["SnappingCobra", 4],
+        ["Spiderling", 3],
+        ["NaturesBounty", 4],
+        ["Bear", 4],
+        ["Minotaur", 4],
+        ["Bite", 4],
+        ["NeuralResonance", 2],
+        ["Eruption", 2],
+        ["SweetFragrance", 2],
+        ["Kraken", 1],
+        ["FireElemental", 1],
+        ["ElderDragon", 1]
+    ]
+}

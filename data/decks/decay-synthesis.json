@@ -1,0 +1,18 @@
+{
+    "name": "Evade and Equip",
+    "avatar": "submarine.png",
+    "customMetadata": false,
+    "records": [
+        ["WhipOfTorment", 4],
+        ["NecromancerTome", 4],
+        ["Spectre", 4],
+        ["RaidingShip", 4],
+        ["ScoutGlider", 4],
+        ["SiegeArtillery", 4],
+        ["Rifle", 4],
+        ["Submarine", 4],
+        ["LichRing", 4],
+        ["ResearchAI", 1],
+        ["AutomataCrew", 3]
+    ]
+}

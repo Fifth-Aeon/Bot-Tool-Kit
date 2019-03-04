@@ -1,0 +1,17 @@
+{
+    "name": "Mutant Soldiers",
+    "avatar": "parmecia.png",
+    "customMetadata": true,
+    "records": [
+        ["EvolutionaryLeap", 4],
+        ["NaturesBounty", 4],
+        ["Pikeman", 4],
+        ["General", 4],
+        ["Knight", 4],
+        ["King", 4],
+        ["mutation", 4],
+        ["SweetFragrance", 4],
+        ["Recruitment", 4],
+        ["Archer", 4]
+    ]
+}

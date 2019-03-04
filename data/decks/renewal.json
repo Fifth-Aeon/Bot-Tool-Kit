@@ -1,0 +1,17 @@
+{
+    "name": "The King’s Legions",
+    "avatar": "throne-king.png",
+    "customMetadata": true,
+    "records": [
+        ["Archer", 4],
+        ["Pikeman", 4],
+        ["Blacksmith", 4],
+        ["Imprison", 4],
+        ["Knight", 4],
+        ["Recruitment", 4],
+        ["General", 4],
+        ["King", 4],
+        ["SentryAngel", 4],
+        ["CallOfJustice", 4]
+    ]
+}

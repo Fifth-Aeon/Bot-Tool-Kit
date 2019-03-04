@@ -1,0 +1,19 @@
+{
+    "name": "Ramp Midrange",
+    "avatar": "hydra.png",
+    "customMetadata": true,
+    "records": [
+        ["Hemorrhage", 4],
+        ["Decapitate", 4],
+        ["NecromancerTome", 2],
+        ["ElderDragon", 3],
+        ["Hydra", 3],
+        ["SpiderQueen", 4],
+        ["NaturesBounty", 4],
+        ["Flourishing", 2],
+        ["SpiderHatchling", 4],
+        ["SweetFragrance", 2],
+        ["Toxin", 4],
+        ["Unbury", 4]
+    ]
+}

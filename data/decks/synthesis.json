@@ -1,0 +1,18 @@
+{
+    "name": "Skies and Seas",
+    "avatar": "battleship.png",
+    "customMetadata": true,
+    "records": [
+        ["SiegeArtillery", 4],
+        ["ScoutGlider", 4],
+        ["Airship", 4],
+        ["Rifle", 4],
+        ["ArchivesSearch", 4],
+        ["GoldMine", 4],
+        ["Submarine", 2],
+        ["BombingRun", 4],
+        ["Battleship", 2],
+        ["Golem", 4],
+        ["Spy", 4]
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "name": "Control",
+    "avatar": "crystal-shine.png",
+    "customMetadata": true,
+    "records": [
+        ["ArchivesSearch", 4],
+        ["GoldMine", 4],
+        ["ForceField", 2],
+        ["BombingRun", 4],
+        ["AtomicStrike", 2],
+        ["ResearchAI", 2],
+        ["RiftBlast", 2],
+        ["Armstice", 4],
+        ["Imprison", 4],
+        ["CallOfJustice", 4],
+        ["SupremeAgeis", 2],
+        ["AncientSage", 2],
+        ["TitanMk2", 4]
+    ]
+}
