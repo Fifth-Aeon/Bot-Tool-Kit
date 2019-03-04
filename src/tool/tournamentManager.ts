@@ -375,7 +375,7 @@ export class TournamentManager {
                 }
             }
         }
-        this.startTournament();
+        return this.startTournament();
     }
 
     public async runConstructedTournament(tournament: ConstructedTournament) {
