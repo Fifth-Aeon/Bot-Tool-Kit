@@ -1,28 +1,46 @@
-import * as cluster from 'cluster';
-import * as bots from '../bots/importBots';
-import { runTournament } from '../tool/commands';
-import { tournamentLoader } from '../tool/tournamentLoader';
-import { TournamentManager } from '../tool/tournamentManager';
-import { TournamentWorker } from '../tool/tournamentWorker';
+import { GameAction } from '../game_model/events/gameAction';
+import { GameSyncEvent } from '../game_model/events/syncEvent';
+import { allDecks } from '../game_model/scenarios/decks';
+import { AiManager } from '../tool/aiManager';
+import { GameManager } from '../tool/gameManager';
 
-// Unhandled promise rejections should throw exceptions
-process.on('unhandledRejection', up => {
-    throw up;
-});
+class TestHarness {
+    private gameManger = new GameManager(
+        this.sendMessageToAis.bind(this),
+        true
+    );
+    private aiManager1 = new AiManager(this.sendActionToGame.bind(this));
+    private aiManager2 = new AiManager(this.sendActionToGame.bind(this));
 
-if (cluster.isMaster) {
-    const numWorkers =  Math.floor(require('os').cpus().length / 3) * 3;
-    const manager = TournamentManager.getInstance(10000, true);
+    private deck1 = allDecks[0];
+    private deck2 = allDecks[0];
 
-    console.warn('create', numWorkers, 'workers');
-    for (let i = 0; i < numWorkers; i++) {
-        manager.createWorker();
+    private sendActionToGame(action: GameAction) {
+        this.gameManger.syncAction(action);
     }
 
-    runTournament(tournamentLoader.getTournamentByName('Standard Limited'));
-} else {
-    // tslint:disable-next-line:no-unused-expression
-    new TournamentWorker();
+    private sendMessageToAis(event: GameSyncEvent) {
+        this.aiManager1.reciveSyncronizationEvent(event);
+        this.aiManager2.reciveSyncronizationEvent(event);
+    }
+
+    public start() {
+        this.aiManager1.startAi('DefaultAI', this.deck1, 0);
+        this.aiManager2.startAi('DefaultAI', this.deck2, 1);
+        this.gameManger.startAIGame(
+            undefined,
+            undefined,
+            this.deck1,
+            this.deck2
+        );
+        return this.gameManger.getGameEndPromise();
+    }
+
+    public async runNTimes(n: number) {
+        for (let i = 0; i < n; i++) {
+            await this.start();
+        }
+    }
 }
 
-const importBotz = bots;
+new TestHarness().runNTimes(100);

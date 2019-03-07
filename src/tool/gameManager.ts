@@ -47,6 +47,12 @@ export class GameManager {
         this.reset();
     }
 
+    public getGameEndPromise() {
+        return new Promise(resolve => {
+            this.onGameEnd = () => resolve();
+        });
+    }
+
     public syncAction(action: GameAction) {
         this.sendGameAction(action);
     }
