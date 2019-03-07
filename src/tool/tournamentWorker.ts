@@ -22,16 +22,16 @@ import {
     WorkerToMasterMessageType
 } from './workerToMasterMessages';
 import { GameSyncEvent, SyncEventType } from '../game_model/events/syncEvent';
+import { AiManager } from './aiManager';
 
 export class TournamentWorker {
     private gameManger?: GameManager;
-    private ai?: AI;
-    private aiActive = false;
+    private aiManager?: AiManager;
+
     private useSeprateAi = false;
     private playerNumbers: number[] = [];
     private gameInfo?: GameInfo;
-    private msgQueue: GameSyncEvent[] = [];
-    private ended = false;
+
 
     constructor() {
         process.on('message', (msg: MasterToWorkerMessage) =>
@@ -121,57 +121,20 @@ export class TournamentWorker {
     }
 
     private syncMessage(event: GameSyncEvent) {
-        if (!this.ai) {
-            throw new Error();
-        }
-        if (this.ended) {
-            this.msgQueue.push(event);
+        if (!this.aiManager) {
             return;
         }
-        if (event.type === SyncEventType.Ended) {
-            this.ended = true;
-            return;
-        }
-
-        if (event.type === SyncEventType.PriortyGained) {
-            if (
-                this.aiActive &&
-                event.player === this.ai.getPlayerNumber()
-            ) {
-                this.ai.onGainPriority();
-            }
-        } else {
-            this.ai.handleGameEvent(event);
-        }
-
-        if (!this.aiActive && event.type === SyncEventType.TurnStart) {
-            this.aiActive = true;
-            this.ai.startActingDelayMode(25, new Animator(0.0001));
-        }
+        this.aiManager.reciveSyncronizationEvent(event);
     }
 
     private startAi(params: StartAiMessage) {
-        if (this.ai) {
-            this.ai.stopActing();
+        if (!this.aiManager) {
+            this.aiManager = new AiManager(this.sendGameAction.bind(this));
         }
         this.gameManger = undefined;
 
-        const constructor = aiList.getConstructorByName(params.aiName);
         const deck = new DeckList(standardFormat, params.deck);
-        const animator = new Animator(0.0001);
-        const game = new ClientGame(
-            'A.I ' + params.playerNumber,
-            (_, action) => this.sendGameAction(action),
-            animator
-        );
-        this.ai = new constructor(params.playerNumber, game, deck);
-        this.aiActive = false;
-        this.ended = false;
-
-        for (const msg of this.msgQueue) {
-            this.syncMessage(msg);
-        }
-        this.msgQueue = [];
+        this.aiManager.startAi(params.aiName, deck, params.playerNumber);
     }
 
     private sendGameAction(action: GameAction) {

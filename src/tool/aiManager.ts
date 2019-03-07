@@ -32,13 +32,8 @@ export class AiManager {
             return;
         }
 
-
-
         if (event.type === SyncEventType.PriortyGained) {
-            if (
-                this.aiActive &&
-                event.player === this.ai.getPlayerNumber()
-            ) {
+            if (this.aiActive && event.player === this.ai.getPlayerNumber()) {
                 this.ai.onGainPriority();
             }
         } else {
@@ -48,7 +43,6 @@ export class AiManager {
         if (!this.aiActive && event.type === SyncEventType.TurnStart) {
             this.aiActive = true;
             this.ai.startActingDelayMode(25, new Animator(0.0001));
-            console.log('Activate', this.ai.getPlayerNumber());
         } else if (this.aiActive && event.type === SyncEventType.Ended) {
             this.aiActive = false;
         }
