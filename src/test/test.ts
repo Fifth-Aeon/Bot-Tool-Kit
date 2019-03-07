@@ -3,6 +3,7 @@ import { GameSyncEvent } from '../game_model/events/syncEvent';
 import { allDecks } from '../game_model/scenarios/decks';
 import { AiManager } from '../tool/aiManager';
 import { GameManager } from '../tool/gameManager';
+import { AiServer } from '../tool/aiServer';
 
 class TestHarness {
     private gameManger = new GameManager(
@@ -43,4 +44,5 @@ class TestHarness {
     }
 }
 
-new TestHarness().runNTimes(100);
+// new TestHarness().runNTimes(100);
+const server = new AiServer('DefaultAI');
