@@ -6,6 +6,8 @@ import { BotPackager } from './botPackager';
 import { GameManager } from './gameManager';
 import { Tournament, TournamentType } from './tournamentDefinition';
 import { TournamentManager } from './tournamentManager';
+import { AiServer } from './aiServer';
+import { DeckList } from '../game_model/deckList';
 
 const packager = new BotPackager();
 const manager = new GameManager();
@@ -56,6 +58,11 @@ const loadDecks = (deckNames: string[]) => {
         return deck;
     });
 };
+
+export const startAiServer = (aiName: string, deckName: string) => {
+    const server = new AiServer(aiName, loadDecks([deckName])[0]);
+};
+
 
 export const runGame = (deckNames: string[], ais: AIConstructor[]) => {
     const decks = loadDecks(deckNames);

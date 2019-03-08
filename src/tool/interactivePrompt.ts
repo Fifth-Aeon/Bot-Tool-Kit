@@ -6,7 +6,13 @@ import { AIConstructor, aiList } from '../game_model/ai/aiList';
 import { DefaultAI } from '../game_model/ai/defaultAi';
 import { DeckList } from '../game_model/deckList';
 import { allDecks } from '../game_model/scenarios/decks';
-import { createBot, packageBot, runGame, runTournament } from './commands';
+import {
+    createBot,
+    packageBot,
+    runGame,
+    runTournament,
+    startAiServer
+} from './commands';
 import { Tournament } from './tournamentDefinition';
 import { tournamentLoader } from './tournamentLoader';
 
@@ -28,6 +34,7 @@ const askForCommand = async () => {
     const options = {
         tournament: 'Run a tournament',
         tournamentDef: 'Create a new tournament definition',
+        aiServer: 'Start A.I Server',
         game: 'Run a game (between 2 bots)',
         create: 'Create a new bot',
         package: 'Package a bot for distribution'
@@ -41,7 +48,8 @@ const askForCommand = async () => {
                 options.tournament,
                 // options.tournamentDef,
                 // options.game,
-                options.create,
+                options.aiServer,
+                options.create
                 // options.package
             ]
         }
@@ -60,6 +68,9 @@ const askForCommand = async () => {
             break;
         case options.tournament:
             getTournamentToStart();
+            break;
+        case options.aiServer:
+            getAiServerOptions();
             break;
         case options.tournamentDef:
             getTournamentDetails();
@@ -98,6 +109,18 @@ const getSingleDeck = async (message: string): Promise<string> => {
     return (result as any).deckName as string;
 };
 
+const getSingleAI = async (message: string): Promise<string> => {
+    const result = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'aiName',
+            message: message,
+            choices: aiList.getConsturctorNames()
+        }
+    ]);
+    return (result as any).aiName as string;
+};
+
 const getGameDetails = async () => {
     runGame(
         [
@@ -105,6 +128,13 @@ const getGameDetails = async () => {
             await getSingleDeck('Player 2 deck')
         ],
         [DefaultAI, DefaultAI]
+    );
+};
+
+const getAiServerOptions = async () => {
+    startAiServer(
+        await getSingleAI('Choose an A.I'),
+        await getSingleDeck('A.I deck')
     );
 };
 
@@ -117,7 +147,8 @@ const getDeckSet = async (): Promise<DeckList[]> => {
             choices: allDecks.map(deck => deck.name).sort()
         }
     ]);
-    return tournamentLoader.getDecksByName((result as any).deckNames as string[]);
+    return tournamentLoader.getDecksByName((result as any)
+        .deckNames as string[]);
 };
 
 const getAISet = async (): Promise<AIConstructor[]> => {
