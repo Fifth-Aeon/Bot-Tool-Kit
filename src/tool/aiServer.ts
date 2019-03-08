@@ -4,21 +4,33 @@ import { GameSyncEvent } from '../game_model/events/syncEvent';
 import { AiManager } from './aiManager';
 import { SavedDeck, DeckList } from '../game_model/deckList';
 import { standardFormat } from '../game_model/gameFormat';
+import { GameManager } from './gameManager';
 
-interface StartAIServerGameMessage {
-    type: 'StartAIServerGameMessage';
-    deckList: SavedDeck;
-    playerNumber: number;
+
+export enum MessageType {
+    Ping = 3,
+    StartGame = 10,
+    GameEvent = 15,
+    GameAction = 16
 }
 
-type AiServerMessage = StartAIServerGameMessage | GameSyncEvent;
+export interface Message {
+    source: string;
+    type: string;
+    data: any;
+}
 
 export class AiServer {
     private socketServer: WebSocket.Server;
     private clientSocket?: WebSocket;
-    private aiManger = new AiManager(this.sendAction.bind(this));
+    private gameManger = new GameManager(this.sendSyncEvent.bind(this), null, true);
+    private aiManger = new AiManager(
+        act => this.gameManger.syncAction(act),
+        1000,
+        1
+    );
 
-    constructor(private aiName: string) {
+    constructor(private aiName: string, private deckList: DeckList) {
         this.socketServer = new WebSocket.Server({ port: 4236 });
         console.log('A.I Server open on port', 4236);
 
@@ -37,22 +49,41 @@ export class AiServer {
     }
 
     private reciveMessage(message: WebSocket.Data) {
-        const event = JSON.parse(message.toString()) as AiServerMessage;
-        if (event.type === 'StartAIServerGameMessage') {
-            this.aiManger.startAi(
-                this.aiName,
-                new DeckList(standardFormat, event.deckList),
-                event.playerNumber
+        const msg = JSON.parse(message.toString()) as Message;
+
+        if (msg.type !== 'Ping') {
+            console.log('recive', msg);
+        }
+        if (msg.type === 'StartGame') {
+            const playerDeck = new DeckList(standardFormat, msg.data.deck);
+            const aiPlayerNumber = msg.data.playerNumber;
+            this.aiManger.startAi(this.aiName, this.deckList, aiPlayerNumber);
+            this.gameManger.startAIGame(
+                undefined,
+                undefined,
+                aiPlayerNumber === 0 ? this.deckList : playerDeck,
+                aiPlayerNumber === 1 ? this.deckList : playerDeck
             );
-        } else {
-            this.aiManger.reciveSyncronizationEvent(event);
+        } else if (msg.type === 'GameAction') {
+            this.gameManger.syncAction(msg.data);
         }
     }
 
-    private sendAction(action: GameAction) {
+    private sendSyncEvent(syncEvent: GameSyncEvent) {
         if (!this.clientSocket) {
             throw new Error('Cannot send to empty socket');
         }
-        this.clientSocket.send(JSON.stringify(action));
+        console.log('Send', syncEvent);
+        this.aiManger.reciveSyncronizationEvent(syncEvent);
+        if (syncEvent.number === undefined) {
+            return;
+        }
+        this.clientSocket.send(
+            JSON.stringify({
+                type: MessageType[MessageType.GameEvent],
+                source: 'LocalServer',
+                data: syncEvent
+            } as Message)
+        );
     }
 }

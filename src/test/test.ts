@@ -8,6 +8,7 @@ import { AiServer } from '../tool/aiServer';
 class TestHarness {
     private gameManger = new GameManager(
         this.sendMessageToAis.bind(this),
+        3000,
         true
     );
     private aiManager1 = new AiManager(this.sendActionToGame.bind(this));
@@ -45,4 +46,4 @@ class TestHarness {
 }
 
 // new TestHarness().runNTimes(100);
-const server = new AiServer('DefaultAI');
+const server = new AiServer('DefaultAI', allDecks[0]);

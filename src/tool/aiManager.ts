@@ -10,7 +10,7 @@ export class AiManager {
     private ai?: AI;
     private aiActive = false;
 
-    constructor(private outputChannel: (act: GameAction) => any) {}
+    constructor(private outputChannel: (act: GameAction) => any, private speed = 25, private animationSpeed = 0.00001) {}
 
     public startAi(aiName: string, deck: DeckList, playerNumber: number) {
         if (this.ai) {
@@ -18,7 +18,7 @@ export class AiManager {
         }
 
         const constructor = aiList.getConstructorByName(aiName);
-        const animator = new Animator(0.0001);
+        const animator = new Animator(this.animationSpeed);
         const game = new ClientGame(
             'A.I ' + playerNumber,
             (_, action) => this.sendGameAction(action),
@@ -42,7 +42,7 @@ export class AiManager {
 
         if (!this.aiActive && event.type === SyncEventType.TurnStart) {
             this.aiActive = true;
-            this.ai.startActingDelayMode(25, new Animator(0.0001));
+            this.ai.startActingDelayMode(this.speed, new Animator(this.animationSpeed));
         } else if (this.aiActive && event.type === SyncEventType.Ended) {
             this.aiActive = false;
         }

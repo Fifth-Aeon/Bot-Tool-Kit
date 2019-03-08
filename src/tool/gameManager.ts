@@ -26,7 +26,6 @@ export class GameManager {
     private ais: Array<AI> = [];
     private seed = 0;
     private useSeperateAi = false;
-    private aiTime = 3000;
 
     private timeoutTimer: any;
 
@@ -35,6 +34,7 @@ export class GameManager {
 
     constructor(
         private sendMessage: (msg: GameSyncEvent) => any = GameManager.noop,
+        private aiTime: number | null = 3000,
         private annoucmentsOn = false,
         private exitOnFailure = false
     ) {
@@ -144,6 +144,9 @@ export class GameManager {
     }
 
     private startAiTimer() {
+        if (this.aiTime === null) {
+            return;
+        }
         if (this.timeoutTimer) {
             clearTimeout(this.timeoutTimer);
         }
