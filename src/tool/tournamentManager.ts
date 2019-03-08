@@ -73,6 +73,22 @@ export class TournamentManager {
                 TournamentManager.checkTimeoutInterval
             );
         }
+
+        if (process.platform === 'win32') {
+            const rl = require('readline').createInterface({
+                input: process.stdin,
+                output: process.stdout
+            });
+
+            rl.on('SIGINT', function() {
+                (process as any).emit('SIGINT');
+            });
+        }
+
+        process.on('SIGINT', () => {
+            this.onTournamentEnd();
+            setTimeout(() => process.exit(), 500);
+        });
     }
 
     private checkTimeout() {
