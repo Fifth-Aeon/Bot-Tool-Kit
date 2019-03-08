@@ -8,6 +8,7 @@ import { Tournament, TournamentType } from './tournamentDefinition';
 import { TournamentManager } from './tournamentManager';
 import { AiServer } from './aiServer';
 import { DeckList } from '../game_model/deckList';
+import { tournamentLoader } from './tournamentLoader';
 
 const packager = new BotPackager();
 const manager = new GameManager();
@@ -60,7 +61,7 @@ const loadDecks = (deckNames: string[]) => {
 };
 
 export const startAiServer = (aiName: string, deckName: string) => {
-    const server = new AiServer(aiName, loadDecks([deckName])[0]);
+    const server = new AiServer(aiName, tournamentLoader.getDecksByName([deckName])[0]);
 };
 
 

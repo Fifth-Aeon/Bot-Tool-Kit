@@ -9,8 +9,11 @@ import { GameSyncEvent, SyncEventType } from '../game_model/events/syncEvent';
 export class AiManager {
     private ai?: AI;
     private aiActive = false;
+    private animator: Animator;
 
-    constructor(private outputChannel: (act: GameAction) => any, private speed = 25, private animationSpeed = 0.00001) {}
+    constructor(private outputChannel: (act: GameAction) => any, private speed = 25, private animationSpeed = 0.00001) {
+        this.animator = new Animator(animationSpeed);
+    }
 
     public startAi(aiName: string, deck: DeckList, playerNumber: number) {
         if (this.ai) {
@@ -18,11 +21,10 @@ export class AiManager {
         }
 
         const constructor = aiList.getConstructorByName(aiName);
-        const animator = new Animator(this.animationSpeed);
         const game = new ClientGame(
             'A.I ' + playerNumber,
             (_, action) => this.sendGameAction(action),
-            animator
+            this.animator
         );
         this.ai = new constructor(playerNumber, game, deck);
     }
@@ -42,7 +44,7 @@ export class AiManager {
 
         if (!this.aiActive && event.type === SyncEventType.TurnStart) {
             this.aiActive = true;
-            this.ai.startActingDelayMode(this.speed, new Animator(this.animationSpeed));
+            this.ai.startActingDelayMode(this.speed, this.animator);
         } else if (this.aiActive && event.type === SyncEventType.Ended) {
             this.aiActive = false;
         }

@@ -103,7 +103,7 @@ const getSingleDeck = async (message: string): Promise<string> => {
             type: 'list',
             name: 'deckName',
             message: message,
-            choices: allDecks.sort()
+            choices: tournamentLoader.getDeckNames()
         }
     ]);
     return (result as any).deckName as string;
