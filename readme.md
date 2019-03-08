@@ -26,3 +26,17 @@ You can play with any of the decks the A.I uses in preconstructed tournaments. T
 5. Select the 3 dots next to the trash icon, then select import deck.
 6. Copy paste the JSON.
 7. Click ok and the deck will be imported. You can now use it to play against DefaultAI or in multiplayer.
+
+### Playing Against your A.I
+You can play against your A.I using the web client.
+
+1. Start the tool with `npm start`.
+2. Select the "Start A.I Server" option. (If you don't see this option, try updating the BTK using the next section).
+3. Select an A.I and a deck for it to play.
+4. Go to fifthaeon.com you should see an option called "Play vs Local Server A.I" then select a deck to use.
+5. You should now be able to manually play against your bot. If your bot ever "quits" that means it crashed or sent an illegal action.
+
+### Updating the Bot Tool Kit
+1. Run `git pull origin master` to get the latest version of the BTK code.
+2. Navigate to the game_model folder with `cd src/game_model`.
+3. Within the game_model folder run `git pull origin master` to update the submodule code.
