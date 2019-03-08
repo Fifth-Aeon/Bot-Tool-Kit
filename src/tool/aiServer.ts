@@ -50,10 +50,6 @@ export class AiServer {
 
     private reciveMessage(message: WebSocket.Data) {
         const msg = JSON.parse(message.toString()) as Message;
-
-        if (msg.type !== 'Ping') {
-            console.log('recive', msg);
-        }
         if (msg.type === 'StartGame') {
             const playerDeck = new DeckList(standardFormat, msg.data.deck);
             const aiPlayerNumber = msg.data.playerNumber;
@@ -73,7 +69,6 @@ export class AiServer {
         if (!this.clientSocket) {
             throw new Error('Cannot send to empty socket');
         }
-        console.log('Send', syncEvent);
         this.aiManger.reciveSyncronizationEvent(syncEvent);
         if (syncEvent.number === undefined) {
             return;
