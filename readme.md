@@ -11,7 +11,7 @@ This repository contains a command line tool intended to make it easier to produ
 7. To test an A.I run the tool than select run tournament. Then select the Standard Preconstructed option.
 
 ### Installation
-1. Clone the repository with submodules using the command `git clone --recurse-submodules https://github.com/FifthAeon/Bot-Tool-Kit.git` (if you don't already have git you can get it [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git))
+1. Clone the repository with submodules using the command `git clone --recurse-submodules https://github.com/Fifth-Aeon/Bot-Tool-Kit.git` (if you don't already have git you can get it [here](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git))
 2. Install NodeJS version 10.x.x from <https://nodejs.org/en/download/>
 3. Navigate your terminal into the folder you cloned the repository into and run `npm install` to get the dependencies
 4. Run `npm start` to start the tool.
