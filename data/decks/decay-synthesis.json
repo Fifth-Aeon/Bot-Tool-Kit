@@ -1,7 +1,7 @@
 {
     "name": "Evade and Equip",
     "avatar": "submarine.png",
-    "customMetadata": false,
+    "customMetadata": true,
     "records": [
         ["WhipOfTorment", 4],
         ["NecromancerTome", 4],
