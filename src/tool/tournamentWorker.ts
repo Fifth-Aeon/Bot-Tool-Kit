@@ -1,28 +1,25 @@
-import { AI } from '../game_model/ai/ai';
-import { Animator } from '../game_model/animator';
-import { ClientGame } from '../game_model/clientGame';
-import { GameAction } from '../game_model/events/gameAction';
 import { aiList } from '../game_model/ai/aiList';
 import { cardList } from '../game_model/cards/cardList';
 import { DeckList } from '../game_model/deckList';
+import { GameAction } from '../game_model/events/gameAction';
+import { GameSyncEvent } from '../game_model/events/syncEvent';
 import { standardFormat } from '../game_model/gameFormat';
+import { AiManager } from './aiManager';
 import { GameInfo, GameManager } from './gameManager';
 import {
+    ActionMessage,
     AddCardMessage,
     MasterToWorkerMessage,
     MasterToWorkerMessageType,
     StartAiMessage,
-    StartGameMesage,
-    SyncMessage,
-    ActionMessage
+    StartGameMesage
 } from './masterToWorkerMessages';
 import {
     GameResultMessage,
     ReadyMessage,
     WorkerToMasterMessageType
 } from './workerToMasterMessages';
-import { GameSyncEvent, SyncEventType } from '../game_model/events/syncEvent';
-import { AiManager } from './aiManager';
+import * as fs from 'fs';
 
 export class TournamentWorker {
     private gameManger?: GameManager;
@@ -31,7 +28,6 @@ export class TournamentWorker {
     private useSeprateAi = false;
     private playerNumbers: number[] = [];
     private gameInfo?: GameInfo;
-
 
     constructor() {
         process.on('message', (msg: MasterToWorkerMessage) =>

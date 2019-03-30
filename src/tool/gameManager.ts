@@ -53,6 +53,21 @@ export class GameManager {
         });
     }
 
+    private saveReplay() {
+        if (!this.gameModel) {
+            console.error('could not save replay');
+            return;
+        }
+        const code = Math.random()
+            .toString(16)
+            .substring(2);
+        fs.writeFile(
+            `results/${code}.json`,
+            JSON.stringify(this.gameModel.getReplay()),
+            () => null
+        );
+    }
+
     public syncAction(action: GameAction) {
         this.sendGameAction(action);
     }
@@ -156,7 +171,11 @@ export class GameManager {
     private timeoutAI() {
         if (this.gameModel) {
             const responsible = this.gameModel.getResponsiblePlayer();
-            console.warn('A.I', responsible, 'looses because they took too long to pass priority');
+            console.warn(
+                'A.I',
+                responsible,
+                'looses because they took too long to pass priority'
+            );
             const winner = this.gameModel.getOtherPlayerNumber(responsible);
             this.sendMessage({
                 type: SyncEventType.Ended,
@@ -193,7 +212,6 @@ export class GameManager {
             return;
         }
 
-
         const res = this.gameModel.handleAction(action);
         if (res === null) {
             console.error(
@@ -228,6 +246,7 @@ export class GameManager {
         if (this.annoucmentsOn) {
             console.log(`A.I ${winner} won the game`);
         }
+        this.saveReplay();
         this.reset();
         this.onGameEnd(winner);
     }
