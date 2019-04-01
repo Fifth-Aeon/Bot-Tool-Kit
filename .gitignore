@@ -5,3 +5,4 @@ docs
 logs
 results
 seedfile
+replays/*.json

@@ -61,8 +61,9 @@ export class GameManager {
         const code = Math.random()
             .toString(16)
             .substring(2);
+        const date = new Date().getTime();
         fs.writeFile(
-            `results/${code}.json`,
+            `replays/${date}-${code}.json`,
             JSON.stringify(this.gameModel.getReplay()),
             () => null
         );
