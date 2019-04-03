@@ -109,6 +109,19 @@ const getSingleDeck = async (message: string): Promise<string> => {
     return (result as any).deckName as string;
 };
 
+const getScenario = async (): Promise<string> => {
+    const result = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'scenarioName',
+            message: 'Choose a scenario',
+            choices: tournamentLoader.getScenarioNames()
+        }
+    ]);
+    return (result as any).scenarioName as string;
+};
+
+
 const getSingleAI = async (message: string): Promise<string> => {
     const result = await inquirer.prompt([
         {
@@ -134,6 +147,7 @@ const getGameDetails = async () => {
 const getAiServerOptions = async () => {
     startAiServer(
         await getSingleAI('Choose an A.I'),
+        await getScenario(),
         await getSingleDeck('A.I deck')
     );
 };

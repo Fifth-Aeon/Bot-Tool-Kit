@@ -1,0 +1,8 @@
+{
+    "name": "Standard Game",
+    "description": "An unaltered game",
+    "playerSetups": [
+        { "initialPermanents": [], "lifeTotal": 25, "initialHand": [] },
+        { "initialPermanents": [], "lifeTotal": 25, "initialHand": [] }
+    ]
+}

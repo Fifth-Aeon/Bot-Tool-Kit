@@ -12,22 +12,29 @@ import {
 import { SavedDeck, DeckList } from '../game_model/deckList';
 import { standardFormat } from '../game_model/gameFormat';
 import { aiList, AIConstructor } from '../game_model/ai/aiList';
-import { allDecks } from '../game_model/scenarios/decks';
+import { Scenario, ScenarioData } from '../game_model/scenario';
 
 class TournamentLoader {
     private static tournamentDataPath = 'data/tournaments';
     private static deckDataPath = 'data/decks';
+    private static scenarioDataPath = 'data/testScenarios';
 
     private tournamentDefinitions = new Map<string, TournamentDefinition>();
     private decks = new Map<string, DeckList>();
+    private scenarios = new Map<string, Scenario>();
 
     constructor() {
         this.readAllTournaments();
         this.readAllDecks();
+        this.readAllScenarios();
     }
 
     public getTournamentNames() {
         return Array.from(this.tournamentDefinitions.keys());
+    }
+
+    public getScenarioNames() {
+        return Array.from(this.scenarios.keys());
     }
 
     public getTournamentByName(name: string) {
@@ -100,14 +107,14 @@ class TournamentLoader {
         return aiList.getConstructorsByName([name])[0];
     }
 
-    private readAllTournaments() {
-        const files = this.getJsonFiles(TournamentLoader.tournamentDataPath);
+    private readAllScenarios() {
+        const files = this.getJsonFiles(TournamentLoader.scenarioDataPath);
 
         for (const file of files) {
             const fileData = JSON.parse(
                 fs.readFileSync(file).toString()
-            ) as TournamentDefinition;
-            this.tournamentDefinitions.set(fileData.name, fileData);
+            ) as ScenarioData;
+            this.scenarios.set(fileData.name, new Scenario(fileData));
         }
     }
 
@@ -121,6 +128,17 @@ class TournamentLoader {
                 fileData.name,
                 new DeckList(standardFormat, fileData)
             );
+        }
+    }
+
+    private readAllTournaments() {
+        const files = this.getJsonFiles(TournamentLoader.tournamentDataPath);
+
+        for (const file of files) {
+            const fileData = JSON.parse(
+                fs.readFileSync(file).toString()
+            ) as TournamentDefinition;
+            this.tournamentDefinitions.set(fileData.name, fileData);
         }
     }
 

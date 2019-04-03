@@ -1,0 +1,16 @@
+{
+    "name": "Test Scenario",
+    "description": "A game with some permanents thrown in.",
+    "playerSetups": [
+        {
+            "initialPermanents": ["Hydra"],
+            "lifeTotal": 25,
+            "initialHand": ["Toxin"]
+        },
+        {
+            "initialPermanents": ["Hydra"],
+            "lifeTotal": 25,
+            "initialHand": ["Toxin"]
+        }
+    ]
+}

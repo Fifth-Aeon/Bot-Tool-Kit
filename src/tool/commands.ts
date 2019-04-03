@@ -60,10 +60,17 @@ const loadDecks = (deckNames: string[]) => {
     });
 };
 
-export const startAiServer = (aiName: string, deckName: string) => {
-    const server = new AiServer(aiName, tournamentLoader.getDecksByName([deckName])[0]);
+export const startAiServer = (
+    aiName: string,
+    scenarioName: string,
+    deckName: string
+) => {
+    const server = new AiServer(
+        aiName,
+        scenarioName,
+        tournamentLoader.getDecksByName([deckName])[0]
+    );
 };
-
 
 export const runGame = (deckNames: string[], ais: AIConstructor[]) => {
     const decks = loadDecks(deckNames);

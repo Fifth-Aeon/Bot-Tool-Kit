@@ -1,36 +1,30 @@
 import * as WebSocket from 'ws';
-import { GameAction } from '../game_model/events/gameAction';
+import { DeckList } from '../game_model/deckList';
 import { GameSyncEvent } from '../game_model/events/syncEvent';
-import { AiManager } from './aiManager';
-import { SavedDeck, DeckList } from '../game_model/deckList';
 import { standardFormat } from '../game_model/gameFormat';
+import { AiManager } from './aiManager';
+import { GameEventMessage, Message, MessageType } from './aiServerMessages';
 import { GameManager } from './gameManager';
-
-
-export enum MessageType {
-    Ping = 3,
-    StartGame = 10,
-    GameEvent = 15,
-    GameAction = 16
-}
-
-export interface Message {
-    source: string;
-    type: string;
-    data: any;
-}
 
 export class AiServer {
     private socketServer: WebSocket.Server;
     private clientSocket?: WebSocket;
-    private gameManger = new GameManager(this.sendSyncEvent.bind(this), null, true);
+    private gameManger = new GameManager(
+        this.sendSyncEvent.bind(this),
+        null,
+        true
+    );
     private aiManger = new AiManager(
         act => this.gameManger.syncAction(act),
         1000,
         1
     );
 
-    constructor(private aiName: string, private deckList: DeckList) {
+    constructor(
+        private aiName: string,
+        private scenarioName: string,
+        private deckList: DeckList
+    ) {
         this.socketServer = new WebSocket.Server({ port: 4236 });
         console.log('A.I Server open on port', 4236);
 
@@ -50,7 +44,7 @@ export class AiServer {
 
     private reciveMessage(message: WebSocket.Data) {
         const msg = JSON.parse(message.toString()) as Message;
-        if (msg.type === 'StartGame') {
+        if (msg.type === MessageType.StartGame) {
             const playerDeck = new DeckList(standardFormat, msg.data.deck);
             const aiPlayerNumber = msg.data.playerNumber;
             this.aiManger.startAi(this.aiName, this.deckList, aiPlayerNumber);
@@ -60,7 +54,7 @@ export class AiServer {
                 aiPlayerNumber === 0 ? this.deckList : playerDeck,
                 aiPlayerNumber === 1 ? this.deckList : playerDeck
             );
-        } else if (msg.type === 'GameAction') {
+        } else if (msg.type === MessageType.GameAction) {
             this.gameManger.syncAction(msg.data);
         }
     }
@@ -75,10 +69,10 @@ export class AiServer {
         }
         this.clientSocket.send(
             JSON.stringify({
-                type: MessageType[MessageType.GameEvent],
+                type: MessageType.GameEvent,
                 source: 'LocalServer',
                 data: syncEvent
-            } as Message)
+            } as GameEventMessage)
         );
     }
 }
