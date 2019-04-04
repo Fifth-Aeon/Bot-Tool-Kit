@@ -3,12 +3,21 @@ import { DeckList } from '../game_model/deckList';
 import { GameSyncEvent } from '../game_model/events/syncEvent';
 import { standardFormat } from '../game_model/gameFormat';
 import { AiManager } from './aiManager';
-import { GameEventMessage, Message, MessageType } from './aiServerMessages';
+import {
+    GameEventMessage,
+    Message,
+    MessageType,
+    TransferScenarioMessage
+} from './aiServerMessages';
 import { GameManager } from './gameManager';
+import { Scenario, ScenarioData } from '../game_model/scenario';
+import { tournamentLoader } from './tournamentLoader';
 
 export class AiServer {
     private socketServer: WebSocket.Server;
     private clientSocket?: WebSocket;
+    private scenario: ScenarioData;
+
     private gameManger = new GameManager(
         this.sendSyncEvent.bind(this),
         null,
@@ -25,6 +34,8 @@ export class AiServer {
         private scenarioName: string,
         private deckList: DeckList
     ) {
+        this.scenario = tournamentLoader.getScenarioByName(scenarioName);
+
         this.socketServer = new WebSocket.Server({ port: 4236 });
         console.log('A.I Server open on port', 4236);
 
@@ -47,13 +58,26 @@ export class AiServer {
         if (msg.type === MessageType.StartGame) {
             const playerDeck = new DeckList(standardFormat, msg.data.deck);
             const aiPlayerNumber = msg.data.playerNumber;
-            this.aiManger.startAi(this.aiName, this.deckList, aiPlayerNumber);
+            const scenario = new Scenario(this.scenario);
+            this.aiManger.startAi(this.aiName, this.deckList, aiPlayerNumber, scenario);
             this.gameManger.startAIGame(
                 undefined,
                 undefined,
                 aiPlayerNumber === 0 ? this.deckList : playerDeck,
-                aiPlayerNumber === 1 ? this.deckList : playerDeck
+                aiPlayerNumber === 1 ? this.deckList : playerDeck,
+                scenario
             );
+            if (this.clientSocket) {
+                this.clientSocket.send(
+                    JSON.stringify({
+                        type: MessageType.TransferScenario,
+                        source: 'LocalServer',
+                        data: {
+                            scenario: this.scenario
+                        }
+                    } as TransferScenarioMessage)
+                );
+            }
         } else if (msg.type === MessageType.GameAction) {
             this.gameManger.syncAction(msg.data);
         }

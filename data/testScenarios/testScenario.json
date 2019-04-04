@@ -4,11 +4,11 @@
     "playerSetups": [
         {
             "initialPermanents": ["Hydra"],
-            "lifeTotal": 25,
+            "lifeTotal": 22,
             "initialHand": ["Toxin"]
         },
         {
-            "initialPermanents": ["Hydra"],
+            "initialPermanents": ["Pikeman"],
             "lifeTotal": 25,
             "initialHand": ["Toxin"]
         }

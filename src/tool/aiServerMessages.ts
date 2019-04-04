@@ -1,19 +1,22 @@
 import { SavedDeck } from '../game_model/deckList';
 import { GameAction } from '../game_model/events/gameAction';
 import { GameSyncEvent } from '../game_model/events/syncEvent';
+import { ScenarioData } from '../game_model/scenario';
 
 export enum MessageType {
     Ping = 'Ping',
     StartGame = 'StartGame',
     GameEvent = 'GameEvent',
-    GameAction = 'GameAction'
+    GameAction = 'GameAction',
+    TransferScenario = 'TransferScenario'
 }
 
 export type Message =
     | PingMessage
     | StartGameMessage
     | GameEventMessage
-    | GameActionMessage;
+    | GameActionMessage
+    | TransferScenarioMessage;
 
 interface BaseMessage {
     source: string;
@@ -40,4 +43,11 @@ export interface GameEventMessage extends BaseMessage {
 export interface GameActionMessage extends BaseMessage {
     type: MessageType.GameAction;
     data: GameAction;
+}
+
+export interface TransferScenarioMessage extends BaseMessage {
+    type: MessageType.TransferScenario;
+    data: {
+        scenario: ScenarioData;
+    };
 }

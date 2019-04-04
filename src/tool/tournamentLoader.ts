@@ -21,7 +21,7 @@ class TournamentLoader {
 
     private tournamentDefinitions = new Map<string, TournamentDefinition>();
     private decks = new Map<string, DeckList>();
-    private scenarios = new Map<string, Scenario>();
+    private scenarios = new Map<string, ScenarioData>();
 
     constructor() {
         this.readAllTournaments();
@@ -36,6 +36,15 @@ class TournamentLoader {
     public getScenarioNames() {
         return Array.from(this.scenarios.keys());
     }
+
+    public getScenarioByName (name: string) {
+        const scenario = this.scenarios.get(name);
+        if (!scenario) {
+            throw new Error(`No Scenario definiton found named ${name}`);
+        }
+        return scenario;
+    }
+
 
     public getTournamentByName(name: string) {
         const constructor = this.tournamentDefinitions.get(name);
@@ -114,7 +123,7 @@ class TournamentLoader {
             const fileData = JSON.parse(
                 fs.readFileSync(file).toString()
             ) as ScenarioData;
-            this.scenarios.set(fileData.name, new Scenario(fileData));
+            this.scenarios.set(fileData.name, fileData);
         }
     }
 

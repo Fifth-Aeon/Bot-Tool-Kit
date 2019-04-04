@@ -9,6 +9,7 @@ import { GameAction, GameActionType } from '../game_model/events/gameAction';
 import { GameSyncEvent, SyncEventType } from '../game_model/events/syncEvent';
 import { standardFormat } from '../game_model/gameFormat';
 import { ServerGame } from '../game_model/serverGame';
+import { Scenario } from '../game_model/scenario';
 
 export interface GameInfo {
     readonly ai1: string;
@@ -282,7 +283,8 @@ export class GameManager {
         ai1: AIConstructor = DefaultAI,
         ai2: AIConstructor = DefaultAI,
         deck1: DeckList,
-        deck2: DeckList
+        deck2: DeckList,
+        scenario?: Scenario
     ) {
         this.seed = this.loadOrGenerateSeed();
         ServerGame.setSeed(this.seed);
@@ -303,6 +305,9 @@ export class GameManager {
             deck1,
             deck2
         ]);
+        if (scenario) {
+            scenario.apply(this.gameModel);
+        }
         if (!this.useSeperateAi) {
             this.game1 = new ClientGame(
                 'A.I - 1',
@@ -314,6 +319,10 @@ export class GameManager {
                 (_, action) => this.sendGameAction(action),
                 animator
             );
+            if (scenario) {
+                scenario.apply(this.game1);
+                scenario.apply(this.game2);
+            }
 
             this.ais.push(new ai1(0, this.game1, deck1));
             this.ais.push(new ai2(1, this.game2, deck2));

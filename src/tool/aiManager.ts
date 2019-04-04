@@ -5,6 +5,7 @@ import { ClientGame } from '../game_model/clientGame';
 import { DeckList } from '../game_model/deckList';
 import { GameAction } from '../game_model/events/gameAction';
 import { GameSyncEvent, SyncEventType } from '../game_model/events/syncEvent';
+import { Scenario } from '../game_model/scenario';
 
 export class AiManager {
     private ai?: AI;
@@ -15,7 +16,7 @@ export class AiManager {
         this.animator = new Animator(animationSpeed);
     }
 
-    public startAi(aiName: string, deck: DeckList, playerNumber: number) {
+    public startAi(aiName: string, deck: DeckList, playerNumber: number, scenario?: Scenario) {
         if (this.ai) {
             this.ai.stopActing();
         }
@@ -26,6 +27,9 @@ export class AiManager {
             (_, action) => this.sendGameAction(action),
             this.animator
         );
+        if (scenario) {
+            scenario.apply(game);
+        }
         this.ai = new constructor(playerNumber, game, deck);
     }
 
