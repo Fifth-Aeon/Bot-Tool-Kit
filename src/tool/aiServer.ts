@@ -1,6 +1,6 @@
 import * as WebSocket from 'ws';
 import { DeckList } from '../game_model/deckList';
-import { GameSyncEvent } from '../game_model/events/syncEvent';
+import { GameSyncEvent, SyncEventType } from '../game_model/events/syncEvent';
 import { standardFormat } from '../game_model/gameFormat';
 import { AiManager } from './aiManager';
 import {
@@ -12,6 +12,7 @@ import {
 import { GameManager } from './gameManager';
 import { Scenario, ScenarioData } from '../game_model/scenario';
 import { tournamentLoader } from './tournamentLoader';
+import { GameActionType } from '../game_model/events/gameAction';
 
 export class AiServer {
     private socketServer: WebSocket.Server;
@@ -91,6 +92,7 @@ export class AiServer {
         if (syncEvent.number === undefined) {
             return;
         }
+        console.log('send', SyncEventType[syncEvent.type], syncEvent);
         this.clientSocket.send(
             JSON.stringify({
                 type: MessageType.GameEvent,
