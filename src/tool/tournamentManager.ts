@@ -26,6 +26,7 @@ import {
     GameEventMessage,
     GameActionMessage
 } from './workerToMasterMessages';
+import { RandomBuilder } from '../game_model/ai/randomBuilder';
 
 interface WorkerHandle {
     readonly worker: cluster.Worker;
@@ -427,9 +428,25 @@ export class TournamentManager {
     public async runLimitedTournament(tournament: LimitedTournament) {
         const ais = tournament.ais;
         const cardPool = this.formLimitedPool(tournament.cardsInPool);
-        const decks = ais.map(ai =>
-            ai.getDeckbuilder().formDeckFromPool(cardPool, limitedFormat)
-        );
+        const decks = ais
+            .map(ai =>
+                ai.getDeckbuilder().formDeckFromPool(cardPool, limitedFormat)
+            )
+            .map((deck, i) => {
+                if (deck.isValid(cardPool)) {
+                    return deck;
+                } else {
+                    console.warn(
+                        ais[i].name,
+                        'Generated an invalid deck, it will be assigned a random one'
+                    );
+                    return new RandomBuilder().formDeckFromPool(
+                        cardPool,
+                        limitedFormat
+                    );
+                }
+            });
+
         for (let i = 0; i < ais.length; i++) {
             for (let j = 0; j < ais.length; j++) {
                 if (i > j) {
