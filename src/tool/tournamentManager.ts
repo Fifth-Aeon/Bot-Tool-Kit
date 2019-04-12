@@ -430,7 +430,7 @@ export class TournamentManager {
         const cardPool = this.formLimitedPool(tournament.cardsInPool);
         const decks = ais
             .map(ai =>
-                ai.getDeckbuilder().formDeckFromPool(cardPool, limitedFormat)
+                ai.getDeckbuilder().formDeckFromPool(cardPool.clone(), limitedFormat)
             )
             .map((deck, i) => {
                 if (deck.isValid(cardPool)) {
