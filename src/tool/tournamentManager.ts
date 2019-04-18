@@ -430,7 +430,9 @@ export class TournamentManager {
         const cardPool = this.formLimitedPool(tournament.cardsInPool);
         const decks = ais
             .map(ai =>
-                ai.getDeckbuilder().formDeckFromPool(cardPool.clone(), limitedFormat)
+                ai
+                    .getDeckbuilder()
+                    .formDeckFromPool(cardPool.clone(), limitedFormat)
             )
             .map((deck, i) => {
                 if (deck.isValid(cardPool)) {
@@ -441,7 +443,7 @@ export class TournamentManager {
                         'Generated an invalid deck, it will be assigned a random one'
                     );
                     return new RandomBuilder().formDeckFromPool(
-                        cardPool,
+                        cardPool.clone(),
                         limitedFormat
                     );
                 }

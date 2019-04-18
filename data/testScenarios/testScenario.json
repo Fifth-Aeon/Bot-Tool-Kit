@@ -5,12 +5,12 @@
         {
             "initialPermanents": ["Hydra"],
             "lifeTotal": 22,
-            "initialHand": ["Toxin"]
+            "initialHands": ["Toxin"]
         },
         {
             "initialPermanents": ["Pikeman"],
             "lifeTotal": 25,
-            "initialHand": ["Toxin"]
+            "initialHands": ["Toxin"]
         }
     ]
 }
