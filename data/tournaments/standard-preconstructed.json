@@ -1,7 +1,18 @@
 {
     "name": "Standard Preconstructed",
     "type": "Preconstructed",
-    "deckPool": "UseAll",
+    "deckPool": [
+        "Ramp Midrange",
+        "Evade and Equip",
+        "March of Undeath",
+        "Ancient Giants",
+        "Lifegain",
+        "Mutant Soldiers",
+        "Control",
+        "The King’s Legions",
+        "Robotic Plague",
+        "Skies and Seas"
+    ],
     "ais": "UseAll",
     "mirrorMode": true,
     "gamesPerMatchup": 10
