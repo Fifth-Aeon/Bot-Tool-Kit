@@ -153,19 +153,19 @@ async function runBalancer(manager: TournamentManager) {
             { id: 'energy', min: 8, max: 10 },
             { id: 'growth', min: 0, max: 6 }
         ],
-        trialsPerConfiguraiton: 1
+        trialsPerConfiguration: 1
     };
 
     const energyCostSearch: ComprehensiveSearchConfig = {
         kind: BalanceMethods.ComprehensiveSearch,
         searchParameters: [{ id: 'energy', min: 0, max: 10 }],
-        trialsPerConfiguraiton: 30
+        trialsPerConfiguration: 30
     };
 
     const attackPowerSearch: ComprehensiveSearchConfig = {
         kind: BalanceMethods.ComprehensiveSearch,
         searchParameters: [{ id: 'damage', min: 0, max: 10 }],
-        trialsPerConfiguraiton: 30
+        trialsPerConfiguration: 30
     };
 
     const fullSearch: ComprehensiveSearchConfig = {
@@ -176,7 +176,7 @@ async function runBalancer(manager: TournamentManager) {
             { id: 'damage', min: 0, max: 10 },
             { id: 'life', min: 0, max: 10 }
         ],
-        trialsPerConfiguraiton: 1
+        trialsPerConfiguration: 1
     };
 
     const tests = [

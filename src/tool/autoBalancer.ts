@@ -35,13 +35,13 @@ export interface Modifiable {
 
 export interface ComprehensiveSearchConfig {
     readonly kind: BalanceMethods.ComprehensiveSearch;
-    readonly trialsPerConfiguraiton: number;
+    readonly trialsPerConfiguration: number;
     readonly searchParameters: Modifiable[];
 }
 
 export interface HillDescentConfig {
     readonly kind: BalanceMethods.HillDescent;
-    readonly trialsPerConfiguraiton: number;
+    readonly trialsPerConfiguration: number;
     readonly threshold: number;
     readonly maxTrials: number;
 }
@@ -84,7 +84,7 @@ export class AutoBalancer {
         } else if (parameters.kind === BalanceMethods.HillDescent) {
             return this.hillDescentMethod(
                 parameters.threshold,
-                parameters.trialsPerConfiguraiton
+                parameters.trialsPerConfiguration
             );
         }
 
@@ -119,7 +119,7 @@ export class AutoBalancer {
         for (const combination of combinations) {
             this.applyConfigurationToCard(toSearch, combination);
             const results = await this.runTournament(
-                parameters.trialsPerConfiguraiton
+                parameters.trialsPerConfiguration
             );
 
             const score = await this.fullInjectionScore(results);
