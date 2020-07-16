@@ -20,7 +20,7 @@
     "commander": "^2.19.0",
     "figlet": "^1.2.1",
     "inquirer": "^6.2.0",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.19",
     "node-typescript-compiler": "^1.1.1",
     "prando": "^5.0.0",
     "ts-node": "^7.0.1",
